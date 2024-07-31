@@ -13,7 +13,7 @@ mod app;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv::dotenv().ok();
-    let now = chrono::Utc::now();
+
 
     let http_client = Arc::new(Client::new());
     let url = std::env::var("API_URL_ARTIFACTSMMO")
@@ -23,15 +23,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     loop {
         let rustboy = fetch_one_character(&http_client, token.as_str(), url.as_str(), "RustBoy").await?;
+        let now = chrono::Utc::now();
+
         println!("{rustboy:?}");
 
         let delta_time_rustboy = rustboy.cooldown_expiration - now;
 
         // waiting rustboy cooldown
-        if delta_time_rustboy.num_seconds() > 0 {
+        if delta_time_rustboy.num_milliseconds() > 0 {
             let delta_time_rustboy_seconds =  delta_time_rustboy.num_seconds() as u64;
+            let delta_time_rustboy_ms =  delta_time_rustboy.num_milliseconds() as u64;
             println!("waiting {delta_time_rustboy_seconds} sec");
-            tokio::time::sleep(time::Duration::from_secs(delta_time_rustboy_seconds)).await;
+            tokio::time::sleep(time::Duration::from_millis(delta_time_rustboy_ms)).await;
             println!("end waiting");
         }
 
