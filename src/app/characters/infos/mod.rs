@@ -19,7 +19,7 @@ pub async fn fetch_one_character(
         .map(|c| c.clone())
         .ok_or(Error::WithCode(
             ErrorWithCode {
-                code: "00CBTERR".to_string(),
+                code: "00CNOTF".to_string(),
                 title: format!("character {name} not found"),
                 description: None,
             }
@@ -44,7 +44,7 @@ pub async fn fetch_characters(
         Err(
             Error::WithCode(
                 ErrorWithCode {
-                    code: "00CBTERR".to_string(),
+                    code: "00PASDE".to_string(),
                     title: "Erreur lors du combat".to_string(),
                     description: None,
                 }
