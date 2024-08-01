@@ -45,7 +45,7 @@ pub async fn fetch_characters(
             Error::WithCode(
                 ErrorWithCode {
                     code: "00PASDE".to_string(),
-                    title: "Erreur lors du combat".to_string(),
+                    title: "Erreur lors de la recuperation des personnage".to_string(),
                     description: None,
                 }
             )
