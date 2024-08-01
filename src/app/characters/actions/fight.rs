@@ -22,7 +22,7 @@ pub async fn fight(
                 ErrorWithCode {
                     code: "00CBTERR".to_string(),
                     title: "Erreur lors du combat".to_string(),
-                    description: None,
+                    description: Some(format!("http status : {}", response.status())),
                 }
             )
         )

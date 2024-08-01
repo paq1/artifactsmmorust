@@ -33,7 +33,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("count of players : {}", players_init.len());
     println!("count of gamemaps : {}", gamemaps.pagination.map(|p| p.total).unwrap_or(-1));
 
-
+    let mut rustboy_action = "nothing".to_string();
+    let mut scalaman_action = "nothing".to_string();
+    let mut ulquiche_action = "nothing".to_string();
 
     loop {
         let players_updated = fetch_characters(&http_client, &token, &url).await?.data;
@@ -46,9 +48,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let delta_time_scalaman = scalaman.cooldown_expiration - now;
         let delta_time_ulquiche = ulquiche.cooldown_expiration - now;
 
-        rustboy_logique(rustboy, &http_client, &url, &token, &delta_time_rustboy).await?;
-        scalaman_logique(scalaman, &http_client, &url, &token, &delta_time_scalaman).await?;
-        ulquiche_logique(ulquiche, &http_client, &url, &token, &delta_time_ulquiche).await?;
+        rustboy_logique(rustboy, &http_client, &url, &token, &delta_time_rustboy, &mut rustboy_action).await?;
+        // scalaman_logique(scalaman, &http_client, &url, &token, &delta_time_scalaman).await?;
+        // ulquiche_logique(ulquiche, &http_client, &url, &token, &delta_time_ulquiche).await?;
 
         tokio::time::sleep(time::Duration::from_secs(1)).await;
         // break; // todo voir les conditions de break :)
