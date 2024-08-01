@@ -20,7 +20,7 @@ pub async fn gathering(
         Err(
             Error::WithCode(
                 ErrorWithCode {
-                    code: "00CBTERR".to_string(),
+                    code: "00GTHERR".to_string(),
                     title: "Erreur lors de la récolte".to_string(),
                     description: Some(format!("{player_name} - http status : {}", response.status())),
                 }
