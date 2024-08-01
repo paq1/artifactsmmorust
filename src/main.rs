@@ -5,7 +5,8 @@ use tokio::time;
 
 use app::characters::actions::fight::fight;
 
-use crate::app::characters::infos::fetch_one_character;
+use crate::app::characters::infos::{fetch_characters, fetch_one_character};
+use crate::app::map::infos::fetch_maps;
 
 mod core;
 mod app;
@@ -20,6 +21,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap_or("https://api.artifactsmmo.com".to_string());
     let token = std::env::var("TOKEN_API_ARTIFACTSMMO")
         .expect("env variable `TOKEN_API_ARTIFACTSMMO` should be set by in .env or in docker-compose env");
+
+    let players = fetch_characters(&http_client, &token, &url).await?.data;
+    let gamemaps = fetch_maps(&http_client, &token, &url).await?;
+
+    println!("info lancement du bot");
+    println!("count of players : {}", players.len());
+    println!("count of gamemaps : {}", gamemaps.pagination.map(|p| p.total).unwrap_or(-1));
 
     loop {
         let rustboy = fetch_one_character(&http_client, token.as_str(), url.as_str(), "RustBoy").await?;
