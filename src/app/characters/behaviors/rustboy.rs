@@ -1,5 +1,6 @@
 use chrono::TimeDelta;
 use reqwest::Client;
+
 use crate::app::characters::actions::fight::fight;
 use crate::core::characters::Character;
 

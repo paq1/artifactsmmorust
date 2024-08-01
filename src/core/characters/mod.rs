@@ -1,11 +1,10 @@
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
+use crate::core::shared::Position;
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct Character {
     pub name: String,
-    pub x: i32,
-    pub y: i32,
+    pub position: Position,
     pub cooldown: i32,
     pub cooldown_expiration: DateTime<Utc>,
     pub task: String,

@@ -1,5 +1,6 @@
 use reqwest::Client;
 use crate::app::api::models::Many;
+use crate::app::api::characters_api::CharacterApi;
 use crate::core::characters::Character;
 use crate::core::errors::{Error, ErrorWithCode};
 
@@ -52,8 +53,11 @@ pub async fn fetch_characters(
         )
     } else {
         response
-            .json::<Many<Character>>()
+            .json::<Many<CharacterApi>>()
             .await
+            .map(|c| {
+                c.dmap(|x| x.into())
+            })
             .map_err(|err| {
                 Error::WithCode(
                     ErrorWithCode {

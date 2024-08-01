@@ -7,6 +7,18 @@ pub struct Many<T> {
     pub pagination: Option<Pagination>,
 }
 
+impl<T: Clone> Many<T> {
+    pub fn dmap<S: Clone, F>(&self, f: F) -> Many<S>
+    where
+        F: Fn(T) -> S,
+    {
+        Many {
+            data: self.data.clone().into_iter().map(|x| f(x)).collect::<Vec<S>>(),
+            pagination: self.pagination.clone(),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Pagination {
     pub total: i32,

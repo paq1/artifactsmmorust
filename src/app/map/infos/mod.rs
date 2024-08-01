@@ -4,7 +4,7 @@ use reqwest::Client;
 
 use crate::app::api::models::Many;
 use crate::core::errors::{Error, ErrorWithCode};
-use crate::core::map::GameMap;
+use crate::app::api::map::GameMap;
 
 pub async fn fetch_one_map(
     http_client: &Client,
