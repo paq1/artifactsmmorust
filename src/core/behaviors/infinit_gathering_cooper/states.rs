@@ -3,6 +3,7 @@ pub enum InfinitGateringCooperStates {
     Empty,
     GoingGathering,
     EndGathering,
-    // FullInventory,
-    // GoingBank,
+    FullInventory,
+    GoingBank,
+    Deposit,
 }

@@ -5,11 +5,13 @@ use tokio::time;
 
 use crate::app::characters::infos::fetch_characters;
 use crate::app::map::infos::fetch_maps;
+use crate::app::services::can_deposit_item_impl::CanDepositItemImpl;
 use crate::app::services::can_fight_impl::CanFightImpl;
 use crate::app::services::can_gathering_impl::CanGatheringImpl;
 use crate::app::services::can_move_impl::CanMoveImpl;
 use crate::core::behaviors::infinit_fight::InfinitFight;
 use crate::core::behaviors::infinit_gathering_cooper::InfinitGatheringCooper;
+use crate::core::services::can_deposit_item::CanDepositItem;
 use crate::core::services::can_fight::CanFight;
 use crate::core::services::can_gathering::CanGathering;
 use crate::core::services::can_move::CanMove;
@@ -45,6 +47,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         token: token.clone(),
         http_client: http_client.clone(),
     }));
+    let can_deposit_item: Arc<Box<dyn CanDepositItem>> = Arc::new(Box::new(CanDepositItemImpl {
+        url: url.clone(),
+        token: token.clone(),
+        http_client: http_client.clone(),
+    }));
 
     println!("chargement des chars");
     let players_init = fetch_characters(&http_client, &token, &url).await?.data;
@@ -70,12 +77,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         scalaman_init.clone(),
         can_gathering.clone(),
         can_move.clone(),
+        can_deposit_item.clone(),
     );
 
     let mut ulquiche_behavior = InfinitGatheringCooper::new(
         ulquiche_init.clone(),
         can_gathering.clone(),
         can_move.clone(),
+        can_deposit_item.clone(),
     );
 
     loop {
