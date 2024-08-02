@@ -4,28 +4,29 @@ use crate::app::api::map::GameMap;
 use crate::app::api::models::Many;
 use crate::core::errors::{Error, ErrorWithCode};
 
-pub async fn fetch_one_map(
-    http_client: &Client,
-    token: &str,
-    url: &str,
-    name: &str,
-) -> Result<GameMap, Error> {
-    let maybe_gamemap = fetch_maps(http_client, token, url)
-        .await
-        .map(|maps| {
-            maps.data.into_iter().find(|currentmap| currentmap.name == name.to_string())
-        })?;
-
-    maybe_gamemap
-        .map(|c| c.clone())
-        .ok_or(Error::WithCode(
-            ErrorWithCode {
-                code: "00MAPNF".to_string(),
-                title: format!("gamemap {name} not found"),
-                description: None,
-            }
-        ))
-}
+// pub async fn fetch_one_map(
+//     http_client: &Client,
+//     token: &str,
+//     url: &str,
+//     name: &str,
+// ) -> Result<GameMap, Error> {
+//     let maybe_gamemap = fetch_maps(http_client, token, url)
+//         .await
+//         .map(|maps| {
+//             maps.data.into_iter().find(|currentmap| currentmap.name == name.to_string())
+//         })?;
+//
+//     maybe_gamemap
+//         .map(|c| c.clone())
+//         .ok_or(Error::WithCode(
+//             ErrorWithCode {
+//                 code: "00MAPNF".to_string(),
+//                 title: format!("gamemap {name} not found"),
+//                 description: None,
+//                 status: None,
+//             }
+//         ))
+// }
 
 pub async fn fetch_maps(
     http_client: &Client,
@@ -52,6 +53,7 @@ pub async fn fetch_maps(
                     code: "00MAPREC".to_string(),
                     title: "Erreur lors de la recuperation des maps".to_string(),
                     description: Some(format!("http status : {}", response.status())),
+                    status: Some(response.status().as_u16() as i32),
                 }
             )
         )
@@ -65,6 +67,7 @@ pub async fn fetch_maps(
                         code: "00PEMAP".to_string(),
                         title: "Erreur lors du parsing des gamemaps".to_string(),
                         description: Some(err.to_string()),
+                        status: None,
                     }
                 )
             })

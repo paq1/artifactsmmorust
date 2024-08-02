@@ -1,31 +1,9 @@
 use reqwest::Client;
-use crate::app::api::models::Many;
+
 use crate::app::api::characters_api::CharacterApi;
+use crate::app::api::models::Many;
 use crate::core::characters::Character;
 use crate::core::errors::{Error, ErrorWithCode};
-
-pub async fn fetch_one_character(
-    http_client: &Client,
-    token: &str,
-    url: &str,
-    name: &str,
-) -> Result<Character, Error> {
-    let maybecharacter = fetch_characters(http_client, token, url)
-        .await
-        .map(|caracters| {
-            caracters.data.into_iter().find(|char| char.name == name.to_string())
-        })?;
-
-    maybecharacter
-        .map(|c| c.clone())
-        .ok_or(Error::WithCode(
-            ErrorWithCode {
-                code: "00CNOTF".to_string(),
-                title: format!("character {name} not found"),
-                description: None,
-            }
-        ))
-}
 
 pub async fn fetch_characters(
     http_client: &Client,
@@ -48,6 +26,7 @@ pub async fn fetch_characters(
                     code: "00PASDE".to_string(),
                     title: "Erreur lors de la recuperation des personnage".to_string(),
                     description: None,
+                    status: Some(response.status().as_u16() as i32),
                 }
             )
         )
@@ -64,6 +43,7 @@ pub async fn fetch_characters(
                         code: "00FMCEER".to_string(),
                         title: "Erreur lors du parsing des characters".to_string(),
                         description: Some(err.to_string()),
+                        status: None,
                     }
                 )
             })

@@ -1,32 +1,32 @@
 use std::sync::Arc;
 
-use crate::core::behaviors::infinit_fight::states::InfinitFightStates;
+use crate::core::behaviors::infinit_gathering_cooper::states::InfinitGateringCooperStates;
 use crate::core::characters::Character;
 use crate::core::errors::Error;
-use crate::core::services::can_fight::CanFight;
+use crate::core::services::can_gathering::CanGathering;
 use crate::core::services::can_move::CanMove;
 use crate::core::shared::Position;
 
-pub mod states;
+mod states;
 
 #[derive(Clone)]
-pub struct InfinitFight {
-    pub current_state: InfinitFightStates,
+pub struct InfinitGatheringCooper {
+    pub current_state: InfinitGateringCooperStates,
     pub character_info: Character,
-    pub can_fight: Arc<Box<dyn CanFight>>,
+    pub can_gathering: Arc<Box<dyn CanGathering>>,
     pub can_move: Arc<Box<dyn CanMove>>,
 }
 
-impl InfinitFight {
+impl InfinitGatheringCooper {
     pub fn new(
         character_info: Character,
-        can_fight: Arc<Box<dyn CanFight>>,
+        can_gathering: Arc<Box<dyn CanGathering>>,
         can_move: Arc<Box<dyn CanMove>>,
     ) -> Self {
-        InfinitFight {
-            current_state: InfinitFightStates::Empty,
+        InfinitGatheringCooper {
+            current_state: InfinitGateringCooperStates::Empty,
             character_info,
-            can_fight,
+            can_gathering,
             can_move,
         }
     }
@@ -35,22 +35,22 @@ impl InfinitFight {
         let now = chrono::Utc::now();
 
         match self.current_state {
-            InfinitFightStates::Empty => {
+            InfinitGateringCooperStates::Empty => {
                 println!("Empty states for : {}", self.character_info.name);
-                let fight_position = Position { x: 0, y: 1 };
-                if self.character_info.position == fight_position {
+                let cooper_position = Position { x: 2, y: 0 };
+                if self.character_info.position == cooper_position {
                     println!("same position for : {}", self.character_info.name);
-                    Ok(InfinitFight {
-                        current_state: InfinitFightStates::GoingFight,
+                    Ok(InfinitGatheringCooper {
+                        current_state: InfinitGateringCooperStates::GoingGathering,
                         ..self.clone()
                     })
                 } else {
-                    println!("move at {:?} for : {}", fight_position, self.character_info.name);
-                    match self.can_move.r#move(&self.character_info, &Position { x: 0, y: 1 }).await {
+                    println!("move at {:?} for : {}", cooper_position, self.character_info.name);
+                    match self.can_move.r#move(&self.character_info, &cooper_position).await {
                         Ok(_) => {
-                            println!("move at {:?} for : {}", fight_position, self.character_info.name);
-                            Ok(InfinitFight {
-                                current_state: InfinitFightStates::GoingFight,
+                            println!("move at {:?} for : {}", cooper_position, self.character_info.name);
+                            Ok(InfinitGatheringCooper {
+                                current_state: InfinitGateringCooperStates::GoingGathering,
                                 ..self.clone()
                             })
                         }
@@ -61,22 +61,22 @@ impl InfinitFight {
                     }
                 }
             }
-            InfinitFightStates::GoingFight => {
+            InfinitGateringCooperStates::GoingGathering => {
                 if self.character_info.cooldown_expiration <= now {
-                    println!("go fight {}", self.character_info.name);
-                    match self.can_fight.fight(&self.character_info)
+                    println!("go gathering for {}", self.character_info.name);
+                    match self.can_gathering.gathering(&self.character_info)
                         .await {
                         Ok(()) => {
-                            println!("end fight for {}", self.character_info.name);
+                            println!("end gathering for {}", self.character_info.name);
                             Ok(
-                                InfinitFight {
-                                    current_state: InfinitFightStates::EndFight,
+                                InfinitGatheringCooper {
+                                    current_state: InfinitGateringCooperStates::EndGathering,
                                     ..self.clone()
                                 }
                             )
                         }
                         Err(e) => {
-                            println!("can fight in error : {e:?}");
+                            println!("can gathering in error : {e:?}");
                             Ok(self.clone()) // peut etre un pb serveur, on attend
                         }
                     }
@@ -86,11 +86,11 @@ impl InfinitFight {
                     Ok(self.clone()) // cooldown de move pas terminer, on attend
                 }
             }
-            InfinitFightStates::EndFight => {
-                println!("trigger state GoingFight"); // on relance le combat
+            InfinitGateringCooperStates::EndGathering => {
+                println!("trigger state GoingGathering"); // on relance le combat
                 Ok(
-                    InfinitFight {
-                        current_state: InfinitFightStates::GoingFight,
+                    InfinitGatheringCooper {
+                        current_state: InfinitGateringCooperStates::GoingGathering,
                         ..self.clone()
                     }
                 )

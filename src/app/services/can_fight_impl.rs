@@ -1,6 +1,8 @@
 use std::sync::Arc;
+
 use async_trait::async_trait;
 use reqwest::Client;
+
 use crate::core::characters::Character;
 use crate::core::errors::{Error, ErrorWithCode};
 use crate::core::services::can_fight::CanFight;
@@ -15,7 +17,7 @@ pub struct CanFightImpl {
 impl CanFight for CanFightImpl {
     async fn fight(&self, character: &Character) -> Result<(), Error> {
         let response = self.http_client
-            .post(format!("{}/my/{}/action/fight", self.url, character.name ))
+            .post(format!("{}/my/{}/action/fight", self.url, character.name))
             .header("Content-Type", "application/json")
             .header("Accept", "application/json")
             .header("Authorization", format!("Bearer {}", self.token))
@@ -30,6 +32,7 @@ impl CanFight for CanFightImpl {
                         code: "00CBTERR".to_string(),
                         title: "Erreur lors du combat".to_string(),
                         description: Some(format!("http status : {}", response.status())),
+                        status: Some(response.status().as_u16() as i32),
                     }
                 )
             )

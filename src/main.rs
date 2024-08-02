@@ -3,14 +3,13 @@ use std::sync::Arc;
 use reqwest::Client;
 use tokio::time;
 
-use crate::app::characters::behaviors::scalaman::scalaman_logique;
-use crate::app::characters::behaviors::ulquiche::ulquiche_logique;
 use crate::app::characters::infos::fetch_characters;
 use crate::app::map::infos::fetch_maps;
 use crate::app::services::can_fight_impl::CanFightImpl;
 use crate::app::services::can_gathering_impl::CanGatheringImpl;
 use crate::app::services::can_move_impl::CanMoveImpl;
 use crate::core::behaviors::infinit_fight::InfinitFight;
+use crate::core::behaviors::infinit_gathering_cooper::InfinitGatheringCooper;
 use crate::core::services::can_fight::CanFight;
 use crate::core::services::can_gathering::CanGathering;
 use crate::core::services::can_move::CanMove;
@@ -56,11 +55,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("count of players : {}", players_init.len());
     println!("count of gamemaps : {}", gamemaps.pagination.map(|p| p.total).unwrap_or(-1));
 
-    let mut rustboy_action = "nothing".to_string();
-    let mut _scalaman_action = "nothing".to_string();
-    let mut _ulquiche_action = "nothing".to_string();
-
     let rustboy_init = players_init.iter().find(|e| e.name == "RustBoy".to_string()).unwrap();
+    let scalaman_init = players_init.iter().find(|e| e.name == "ScalaMan".to_string()).unwrap();
+    let ulquiche_init = players_init.iter().find(|e| e.name == "Ulquiche".to_string()).unwrap();
 
 
     let mut rustboy_behavior = InfinitFight::new(
@@ -69,16 +66,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         can_move.clone(),
     );
 
+    let mut scalaman_behavior = InfinitGatheringCooper::new(
+        scalaman_init.clone(),
+        can_gathering.clone(),
+        can_move.clone(),
+    );
+
+    let mut ulquiche_behavior = InfinitGatheringCooper::new(
+        ulquiche_init.clone(),
+        can_gathering.clone(),
+        can_move.clone(),
+    );
+
     loop {
         let players_updated = fetch_characters(&http_client, &token, &url).await?.data;
         let rustboy = players_updated.iter().find(|e| e.name == "RustBoy".to_string()).unwrap();
         let scalaman = players_updated.iter().find(|e| e.name == "ScalaMan".to_string()).unwrap();
         let ulquiche = players_updated.iter().find(|e| e.name == "Ulquiche".to_string()).unwrap();
-        let now = chrono::Utc::now();
-
-        let _delta_time_rustboy = rustboy.cooldown_expiration - now;
-        let _delta_time_scalaman = scalaman.cooldown_expiration - now;
-        let _delta_time_ulquiche = ulquiche.cooldown_expiration - now;
 
         let next_beavior_rustboy = rustboy_behavior.run().await?;
         rustboy_behavior = InfinitFight {
@@ -86,9 +90,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             ..next_beavior_rustboy.clone()
         };
 
-        // rustboy_logique(rustboy, &delta_time_rustboy, &mut rustboy_action, can_fight.clone()).await?;
-        // scalaman_logique(scalaman, &delta_time_scalaman, can_gathering.clone()).await?;
-        // ulquiche_logique(ulquiche, &delta_time_ulquiche, can_gathering.clone()).await?;
+        let next_beavior_scalaman = scalaman_behavior.run().await?;
+        scalaman_behavior = InfinitGatheringCooper {
+            character_info: scalaman.clone(),
+            ..next_beavior_scalaman.clone()
+        };
+
+        let next_beavior_ulquiche = ulquiche_behavior.run().await?;
+        ulquiche_behavior = InfinitGatheringCooper {
+            character_info: ulquiche.clone(),
+            ..next_beavior_ulquiche.clone()
+        };
+
 
         tokio::time::sleep(time::Duration::from_secs(1)).await;
         // break; // todo voir les conditions de break :)

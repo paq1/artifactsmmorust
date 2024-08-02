@@ -1,8 +1,8 @@
 #[derive(Clone, Debug)]
-pub enum InfinitFightStates {
+pub enum InfinitGateringCooperStates {
     Empty,
-    GoingFight,
-    EndFight,
+    GoingGathering,
+    EndGathering,
     // FullInventory,
     // GoingBank,
 }

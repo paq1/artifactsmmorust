@@ -19,11 +19,11 @@ pub struct CanMoveImpl {
 impl CanMove for CanMoveImpl {
     async fn r#move(&self, character: &Character, position: &Position) -> Result<(), Error> {
         let response = self.http_client
-            .post(format!("{}/my/{}/action/move", self.url, character.name ))
+            .post(format!("{}/my/{}/action/move", self.url, character.name))
             .header("Content-Type", "application/json")
             .header("Accept", "application/json")
             .header("Authorization", format!("Bearer {}", self.token))
-            .json(&BodyMove {x: position.x, y: position.y})
+            .json(&BodyMove { x: position.x, y: position.y })
             .send()
             .await
             .map_err(|e| Error::Simple(e.to_string()))?;
@@ -35,6 +35,7 @@ impl CanMove for CanMoveImpl {
                         code: "00MVTERR".to_string(),
                         title: "Erreur lors du deplacement".to_string(),
                         description: Some(format!("http status : {}", response.status())),
+                        status: Some(response.status().as_u16() as i32),
                     }
                 )
             )
