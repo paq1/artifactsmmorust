@@ -107,6 +107,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         let lowest_cooldown = players_updated
             .iter()
+            // .filter(|p| p.name != "Ulquiche".to_string())
             .map(|p| {
                 let cooldown = (p.cooldown_expiration - now).num_seconds();
                 println!("cooldown for {} is {}", p.name, cooldown);
@@ -144,10 +145,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             character_info: cerise.clone(),
             ..next_beavior_cerise.clone()
         };
-
-
-
-        // break; // todo voir les conditions de break :)
     }
 }
 
