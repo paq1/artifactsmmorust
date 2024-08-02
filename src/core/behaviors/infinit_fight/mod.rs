@@ -39,6 +39,14 @@ impl InfinitFight {
         let now = chrono::Utc::now();
 
         match self.current_state {
+            InfinitFightStates::Empty if self.character_info.is_full_inventory() => {
+                Ok(
+                    InfinitFight {
+                        current_state: InfinitFightStates::FullInventory,
+                        ..self.clone()
+                    }
+                )
+            }
             InfinitFightStates::Empty => {
                 println!("Empty states for : {}", self.character_info.name);
                 let fight_position = Position { x: 0, y: 1 };
@@ -107,7 +115,7 @@ impl InfinitFight {
                         }
                     )
                 }
-            },
+            }
             InfinitFightStates::FullInventory => {
                 Ok(
                     InfinitFight {
@@ -115,7 +123,7 @@ impl InfinitFight {
                         ..self.clone()
                     }
                 )
-            },
+            }
             InfinitFightStates::GoingBank => {
                 let bank_position = Position { x: 4, y: 1 };
                 if self.character_info.position == bank_position {
