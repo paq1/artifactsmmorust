@@ -3,7 +3,6 @@ use crate::core::behaviors::go_infinit_gathering::GoInfinitGateringBehavior;
 use crate::core::errors::Error;
 
 pub mod infinit_fight;
-pub mod infinit_gathering;
 pub mod go_deposit_bank;
 pub mod go_infinit_gathering;
 

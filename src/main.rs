@@ -15,7 +15,6 @@ use crate::core::behaviors::Behavior;
 use crate::core::behaviors::go_deposit_bank::GoDepositBankBehavior;
 use crate::core::behaviors::go_infinit_gathering::GoInfinitGateringBehavior;
 use crate::core::behaviors::infinit_fight::InfinitFight;
-use crate::core::behaviors::infinit_gathering::InfinitGathering;
 use crate::core::services::can_deposit_item::CanDepositItem;
 use crate::core::services::can_fight::CanFight;
 use crate::core::services::can_gathering::CanGathering;
@@ -88,12 +87,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         can_deposit_item.clone(),
     );
 
-    let mut scalaman_behavior = InfinitGathering::new(
-        scalaman_init.clone(),
-        can_gathering.clone(),
-        can_move.clone(),
-        can_deposit_item.clone(),
-        &cooper_position,
+    let mut scalaman_behavior = Behavior::GoInfinitGateringBehavior(
+        GoInfinitGateringBehavior::new(
+            scalaman_init.clone(),
+            &cooper_position,
+            can_gathering.clone(),
+            can_move.clone(),
+            GoDepositBankBehavior::new(
+                scalaman_init.clone(),
+                Position::new(4, 1),
+                can_move.clone(),
+                can_deposit_item.clone(),
+            ),
+        )
     );
 
 
@@ -160,11 +166,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             ..next_beavior_rustboy.clone()
         };
 
-        let next_beavior_scalaman = scalaman_behavior.run().await?;
-        scalaman_behavior = InfinitGathering {
-            character_info: scalaman.clone(),
-            ..next_beavior_scalaman.clone()
-        };
+        let next_beavior_scalaman = scalaman_behavior.next_behavior().await?.unwrap();
+        match next_beavior_scalaman {
+            Behavior::GoInfinitGateringBehavior(b) => {
+                scalaman_behavior = Behavior::GoInfinitGateringBehavior(GoInfinitGateringBehavior {
+                    character_info: scalaman.clone(),
+                    ..b
+                });
+            }
+            _ => {
+                println!("erreur behavior for scalaman");
+            }
+        }
 
         let next_beavior_ulquiche = ulquiche_behavior.next_behavior().await?.unwrap();
         match next_beavior_ulquiche {
