@@ -1,5 +1,5 @@
 use std::sync::Arc;
-
+use chrono::Utc;
 use reqwest::Client;
 use tokio::time;
 
@@ -103,6 +103,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let scalaman = players_updated.iter().find(|e| e.name == "ScalaMan".to_string()).unwrap();
         let ulquiche = players_updated.iter().find(|e| e.name == "Ulquiche".to_string()).unwrap();
         let cerise = players_updated.iter().find(|e| e.name == "Cerise".to_string()).unwrap();
+        let now = Utc::now();
+
+        let lowest_cooldown = players_updated
+            .iter()
+            .map(|p| {
+                let cooldown = (p.cooldown_expiration - now).num_seconds();
+                println!("cooldown for {} is {}", p.name, cooldown);
+                cooldown
+            })
+            .min()
+            .unwrap_or(1);
+
+        if lowest_cooldown >= 0 {
+            println!("waiting {lowest_cooldown}");
+            tokio::time::sleep(time::Duration::from_secs(lowest_cooldown as u64)).await;
+        }
+
 
         let next_beavior_rustboy = rustboy_behavior.run().await?;
         rustboy_behavior = InfinitFight {
@@ -129,7 +146,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         };
 
 
-        tokio::time::sleep(time::Duration::from_secs(1)).await;
+
         // break; // todo voir les conditions de break :)
     }
 }
