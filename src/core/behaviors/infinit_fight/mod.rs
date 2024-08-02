@@ -39,7 +39,7 @@ impl InfinitFight {
         let now = chrono::Utc::now();
 
         match self.current_state {
-            InfinitFightStates::Empty if self.character_info.is_full_inventory() => {
+            _ if self.character_info.is_full_inventory() => {
                 Ok(
                     InfinitFight {
                         current_state: InfinitFightStates::FullInventory,
