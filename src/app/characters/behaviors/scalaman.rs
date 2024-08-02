@@ -1,15 +1,14 @@
-use chrono::TimeDelta;
-use reqwest::Client;
+use std::sync::Arc;
 
-use crate::app::characters::actions::gathering::gathering;
+use chrono::TimeDelta;
+
 use crate::core::characters::Character;
+use crate::core::services::can_gathering::CanGathering;
 
 pub async fn scalaman_logique(
     scalaman: &Character,
-    http_client: &Client,
-    url: &String,
-    token: &String,
     cooldown: &TimeDelta,
+    can_gathering: Arc<Box<dyn CanGathering>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // waiting scalaman cooldown
 
@@ -19,7 +18,7 @@ pub async fn scalaman_logique(
 
     if scalaman.cooldown_expiration <= chrono::offset::Local::now() {
         println!("go recolter :)");
-        match gathering(&http_client, token.as_str(), url.as_str(), "ScalaMan")
+        match can_gathering.gathering(scalaman)
             .await {
             Ok(()) => (),
             Err(e) => {
