@@ -65,6 +65,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let rustboy_init = players_init.iter().find(|e| e.name == "RustBoy".to_string()).unwrap();
     let scalaman_init = players_init.iter().find(|e| e.name == "ScalaMan".to_string()).unwrap();
     let ulquiche_init = players_init.iter().find(|e| e.name == "Ulquiche".to_string()).unwrap();
+    let cerise_init = players_init.iter().find(|e| e.name == "Cerise".to_string()).unwrap();
 
 
     let mut rustboy_behavior = InfinitFight::new(
@@ -88,11 +89,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         can_deposit_item.clone(),
     );
 
+    let mut cerise_behavior = InfinitFight::new(
+        cerise_init.clone(),
+        can_fight.clone(),
+        can_move.clone(),
+        can_deposit_item.clone(),
+    );
+
+
     loop {
         let players_updated = fetch_characters(&http_client, &token, &url).await?.data;
         let rustboy = players_updated.iter().find(|e| e.name == "RustBoy".to_string()).unwrap();
         let scalaman = players_updated.iter().find(|e| e.name == "ScalaMan".to_string()).unwrap();
         let ulquiche = players_updated.iter().find(|e| e.name == "Ulquiche".to_string()).unwrap();
+        let cerise = players_updated.iter().find(|e| e.name == "Cerise".to_string()).unwrap();
 
         let next_beavior_rustboy = rustboy_behavior.run().await?;
         rustboy_behavior = InfinitFight {
@@ -110,6 +120,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ulquiche_behavior = InfinitGatheringCooper {
             character_info: ulquiche.clone(),
             ..next_beavior_ulquiche.clone()
+        };
+
+        let next_beavior_cerise = cerise_behavior.run().await?;
+        cerise_behavior = InfinitFight {
+            character_info: cerise.clone(),
+            ..next_beavior_cerise.clone()
         };
 
 
