@@ -4,17 +4,18 @@ use reqwest::Client;
 use tokio::time;
 
 use crate::app::characters::infos::fetch_characters;
-use crate::app::map::infos::fetch_maps;
+use crate::app::map::infos::{fetch_maps, fetch_maps_from_position};
 use crate::app::services::can_deposit_item_impl::CanDepositItemImpl;
 use crate::app::services::can_fight_impl::CanFightImpl;
 use crate::app::services::can_gathering_impl::CanGatheringImpl;
 use crate::app::services::can_move_impl::CanMoveImpl;
 use crate::core::behaviors::infinit_fight::InfinitFight;
-use crate::core::behaviors::infinit_gathering_cooper::InfinitGatheringCooper;
+use crate::core::behaviors::infinit_gathering::InfinitGathering;
 use crate::core::services::can_deposit_item::CanDepositItem;
 use crate::core::services::can_fight::CanFight;
 use crate::core::services::can_gathering::CanGathering;
 use crate::core::services::can_move::CanMove;
+use crate::core::shared::Position;
 
 mod core;
 mod app;
@@ -56,7 +57,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("chargement des chars");
     let players_init = fetch_characters(&http_client, &token, &url).await?.data;
     println!("chargement de la gamemap");
-    let gamemaps = fetch_maps(&http_client, &token, &url).await?;
+    let gamemaps = fetch_maps(&http_client, &token, &url, None).await?;
 
     println!("info lancement du bot");
     println!("count of players : {}", players_init.len());
@@ -67,6 +68,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let ulquiche_init = players_init.iter().find(|e| e.name == "Ulquiche".to_string()).unwrap();
     let cerise_init = players_init.iter().find(|e| e.name == "Cerise".to_string()).unwrap();
 
+    let cooper_maps = fetch_maps(&http_client, &token, &url, Some(vec![("content_code", "copper_rocks")])).await?;
+    println!("cooper_maps len : {}", cooper_maps.data.len());
+    let first_coopermaps = cooper_maps.data.first().unwrap();
+    let cooper_position = first_coopermaps.get_position();
+
 
     let mut rustboy_behavior = InfinitFight::new(
         rustboy_init.clone(),
@@ -75,18 +81,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         can_deposit_item.clone(),
     );
 
-    let mut scalaman_behavior = InfinitGatheringCooper::new(
+    let mut scalaman_behavior = InfinitGathering::new(
         scalaman_init.clone(),
         can_gathering.clone(),
         can_move.clone(),
         can_deposit_item.clone(),
+        &cooper_position,
     );
 
-    let mut ulquiche_behavior = InfinitGatheringCooper::new(
+    let mut ulquiche_behavior = InfinitGathering::new(
         ulquiche_init.clone(),
         can_gathering.clone(),
         can_move.clone(),
         can_deposit_item.clone(),
+        &cooper_position,
     );
 
     let mut cerise_behavior = InfinitFight::new(
@@ -95,6 +103,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         can_move.clone(),
         can_deposit_item.clone(),
     );
+
+    let coopermap = fetch_maps_from_position(
+        &http_client.clone(),
+        token.as_str(),
+        url.as_str(),
+        &Position::new(2, 0)
+    ).await;
+
+    println!("gamemap cooper {coopermap:?}");
 
 
     loop {
@@ -129,13 +146,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         };
 
         let next_beavior_scalaman = scalaman_behavior.run().await?;
-        scalaman_behavior = InfinitGatheringCooper {
+        scalaman_behavior = InfinitGathering {
             character_info: scalaman.clone(),
             ..next_beavior_scalaman.clone()
         };
 
         let next_beavior_ulquiche = ulquiche_behavior.run().await?;
-        ulquiche_behavior = InfinitGatheringCooper {
+        ulquiche_behavior = InfinitGathering {
             character_info: ulquiche.clone(),
             ..next_beavior_ulquiche.clone()
         };

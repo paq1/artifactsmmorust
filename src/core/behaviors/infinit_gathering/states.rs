@@ -1,5 +1,5 @@
 #[derive(Clone, Debug)]
-pub enum InfinitGateringCooperStates {
+pub enum InfinitGateringStates {
     Empty,
     GoingGathering,
     EndGathering,
