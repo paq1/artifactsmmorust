@@ -3,6 +3,7 @@ pub enum InfinitFightStates {
     Empty,
     GoingFight,
     EndFight,
-    // FullInventory,
-    // GoingBank,
+    FullInventory,
+    GoingBank,
+    Deposit,
 }

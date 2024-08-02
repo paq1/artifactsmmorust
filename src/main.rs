@@ -71,6 +71,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         rustboy_init.clone(),
         can_fight.clone(),
         can_move.clone(),
+        can_deposit_item.clone(),
     );
 
     let mut scalaman_behavior = InfinitGatheringCooper::new(
