@@ -1,4 +1,6 @@
+use std::ops::Deref;
 use std::sync::Arc;
+
 use chrono::Utc;
 use reqwest::Client;
 use tokio::time;
@@ -9,6 +11,9 @@ use crate::app::services::can_deposit_item_impl::CanDepositItemImpl;
 use crate::app::services::can_fight_impl::CanFightImpl;
 use crate::app::services::can_gathering_impl::CanGatheringImpl;
 use crate::app::services::can_move_impl::CanMoveImpl;
+use crate::core::behaviors::Behavior;
+use crate::core::behaviors::go_deposit_bank::GoDepositBankBehavior;
+use crate::core::behaviors::go_infinit_gathering::GoInfinitGateringBehavior;
 use crate::core::behaviors::infinit_fight::InfinitFight;
 use crate::core::behaviors::infinit_gathering::InfinitGathering;
 use crate::core::services::can_deposit_item::CanDepositItem;
@@ -73,6 +78,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let first_coopermaps = cooper_maps.data.first().unwrap();
     let cooper_position = first_coopermaps.get_position();
 
+    // behaviors
+
 
     let mut rustboy_behavior = InfinitFight::new(
         rustboy_init.clone(),
@@ -89,12 +96,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         &cooper_position,
     );
 
-    let mut ulquiche_behavior = InfinitGathering::new(
-        ulquiche_init.clone(),
-        can_gathering.clone(),
-        can_move.clone(),
-        can_deposit_item.clone(),
-        &cooper_position,
+
+    let mut ulquiche_behavior: Behavior = Behavior::GoInfinitGateringBehavior(
+        GoInfinitGateringBehavior::new(
+            ulquiche_init.clone(),
+            &cooper_position,
+            can_gathering.clone(),
+            can_move.clone(),
+            GoDepositBankBehavior::new(
+                ulquiche_init.clone(),
+                Position::new(4, 1),
+                can_move.clone(),
+                can_deposit_item.clone(),
+            ),
+        )
     );
 
     let mut cerise_behavior = InfinitFight::new(
@@ -108,7 +123,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         &http_client.clone(),
         token.as_str(),
         url.as_str(),
-        &Position::new(2, 0)
+        &Position::new(2, 0),
     ).await;
 
     println!("gamemap cooper {coopermap:?}");
@@ -151,11 +166,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             ..next_beavior_scalaman.clone()
         };
 
-        let next_beavior_ulquiche = ulquiche_behavior.run().await?;
-        ulquiche_behavior = InfinitGathering {
-            character_info: ulquiche.clone(),
-            ..next_beavior_ulquiche.clone()
-        };
+        let next_beavior_ulquiche = ulquiche_behavior.next_behavior().await?.unwrap();
+        match next_beavior_ulquiche {
+            Behavior::GoInfinitGateringBehavior(b) => {
+                ulquiche_behavior = Behavior::GoInfinitGateringBehavior(GoInfinitGateringBehavior {
+                    character_info: ulquiche.clone(),
+                    ..b
+                });
+            }
+            _ => {
+                println!("erreur behavior for ulquiche");
+            }
+        }
+
 
         let next_beavior_cerise = cerise_behavior.run().await?;
         cerise_behavior = InfinitFight {

@@ -30,7 +30,7 @@ impl CanGathering for CanGatheringImpl {
                 Error::WithCode(
                     ErrorWithCode {
                         code: "00GATERR".to_string(),
-                        title: "Erreur lors du combat".to_string(),
+                        title: "Erreur lors du gathering".to_string(),
                         description: Some(format!("http status : {}", response.status())),
                         status: Some(response.status().as_u16() as i32),
                     }
