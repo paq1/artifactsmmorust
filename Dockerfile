@@ -1,6 +1,5 @@
-FROM rust:1.67
+FROM rust:1.80.0
 COPY . .
 WORKDIR /
 RUN cargo build --release
-EXPOSE 8080
 CMD ["./target/release/artifactsmmorust"]
