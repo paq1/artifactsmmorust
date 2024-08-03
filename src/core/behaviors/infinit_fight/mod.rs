@@ -35,11 +35,23 @@ impl InfinitFight {
         }
     }
 
+    pub fn is_in_workflow_fullinventory(&self) -> bool {
+
+        let workflow_states = vec![
+            InfinitFightStates::FullInventory,
+            InfinitFightStates::GoingBank,
+            InfinitFightStates::Deposit,
+        ];
+
+        workflow_states.contains(&self.current_state)
+    }
+
     pub async fn run(&self) -> Result<Self, Error> {
         let now = chrono::Utc::now();
 
         match self.current_state {
-            _ if self.character_info.is_full_inventory() => {
+            _ if self.character_info.is_full_inventory() && !self.is_in_workflow_fullinventory()  => {
+                println!("[{}]inventory is full", self.character_info.name);
                 Ok(
                     InfinitFight {
                         current_state: InfinitFightStates::FullInventory,
