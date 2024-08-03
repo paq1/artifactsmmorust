@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+
+env:
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+  IMAGE_NAME: artifactsmmorust
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+#      - name: Tests
+#        run: |
+#          cargo build --verbose
+#          cargo test --verbose
+      - name: Build image
+        run: docker build -t artifactsmmorust .
+
+      - name: Tag image latest
+        run: |
+          docker tag artifactsmmorust ppaquin/artifactsmmorust:latest
+          docker tag artifactsmmorust ppaquin/artifactsmmorust:${{github.sha}}
+      - name: Login to docker hub
+        uses: docker/login-action@v2
+        with:
+          registry: docker.io
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: push latest
+        run: |
+          docker push ppaquin/artifactsmmorust:latest
+          docker push ppaquin/artifactsmmorust:${{github.sha}}
