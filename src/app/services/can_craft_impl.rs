@@ -16,7 +16,7 @@ pub struct CanCraftImpl {
 
 #[async_trait]
 impl CanCraft for CanCraftImpl {
-    async fn craft(&self, character: &Character, code_item: &String, quantity: u32) -> Result<(), Error> {
+    async fn _craft(&self, character: &Character, code_item: &String, quantity: u32) -> Result<(), Error> {
         let response = self.http_client
             .post(format!("{}/my/{}/action/crafting", self.url, character.name))
             .header("Content-Type", "application/json")

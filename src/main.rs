@@ -1,4 +1,3 @@
-use std::ops::Deref;
 use std::sync::Arc;
 
 use chrono::Utc;
@@ -11,10 +10,10 @@ use crate::app::services::can_deposit_item_impl::CanDepositItemImpl;
 use crate::app::services::can_fight_impl::CanFightImpl;
 use crate::app::services::can_gathering_impl::CanGatheringImpl;
 use crate::app::services::can_move_impl::CanMoveImpl;
-use crate::core::behaviors::Behavior;
 use crate::core::behaviors::go_deposit_bank::GoDepositBankBehavior;
 use crate::core::behaviors::go_infinit_gathering::GoInfinitGateringBehavior;
 use crate::core::behaviors::infinit_fight::InfinitFight;
+use crate::core::behaviors::moving::MovingBehavior;
 use crate::core::services::can_deposit_item::CanDepositItem;
 use crate::core::services::can_fight::CanFight;
 use crate::core::services::can_gathering::CanGathering;
@@ -68,8 +67,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("count of gamemaps : {}", gamemaps.pagination.map(|p| p.total).unwrap_or(-1));
 
     let rustboy_init = players_init.iter().find(|e| e.name == "RustBoy".to_string()).unwrap();
-    let scalaman_init = players_init.iter().find(|e| e.name == "ScalaMan".to_string()).unwrap();
-    let ulquiche_init = players_init.iter().find(|e| e.name == "Ulquiche".to_string()).unwrap();
     let cerise_init = players_init.iter().find(|e| e.name == "Cerise".to_string()).unwrap();
 
     let cooper_maps = fetch_maps(&http_client, &token, &url, Some(vec![("content_code", "copper_rocks")])).await?;
@@ -78,6 +75,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cooper_position = first_coopermaps.get_position();
 
     // behaviors
+    let moving_behavior_template: MovingBehavior = MovingBehavior::new(can_move.clone());
+    let deposit_bank_behavior_template = GoDepositBankBehavior::new(
+        can_deposit_item.clone(),
+        moving_behavior_template.clone(),
+    );
 
 
     let mut rustboy_behavior = InfinitFight::new(
@@ -87,35 +89,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         can_deposit_item.clone(),
     );
 
-    let mut scalaman_behavior = Behavior::GoInfinitGateringBehavior(
-        GoInfinitGateringBehavior::new(
-            scalaman_init.clone(),
-            &cooper_position,
-            can_gathering.clone(),
-            can_move.clone(),
-            GoDepositBankBehavior::new(
-                scalaman_init.clone(),
-                Position::new(4, 1),
-                can_move.clone(),
-                can_deposit_item.clone(),
-            ),
-        )
+    let mut scalaman_behavior = GoInfinitGateringBehavior::new(
+        &cooper_position,
+        can_gathering.clone(),
+        deposit_bank_behavior_template.clone(),
+        moving_behavior_template.clone(),
     );
 
-
-    let mut ulquiche_behavior: Behavior = Behavior::GoInfinitGateringBehavior(
-        GoInfinitGateringBehavior::new(
-            ulquiche_init.clone(),
-            &cooper_position,
-            can_gathering.clone(),
-            can_move.clone(),
-            GoDepositBankBehavior::new(
-                ulquiche_init.clone(),
-                Position::new(4, 1),
-                can_move.clone(),
-                can_deposit_item.clone(),
-            ),
-        )
+    let mut ulquiche_behavior = GoInfinitGateringBehavior::new(
+        &cooper_position,
+        can_gathering.clone(),
+        deposit_bank_behavior_template.clone(),
+        moving_behavior_template.clone(),
     );
 
     let mut cerise_behavior = InfinitFight::new(
@@ -166,31 +151,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             ..next_beavior_rustboy.clone()
         };
 
-        let next_beavior_scalaman = scalaman_behavior.next_behavior().await?.unwrap();
-        match next_beavior_scalaman {
-            Behavior::GoInfinitGateringBehavior(b) => {
-                scalaman_behavior = Behavior::GoInfinitGateringBehavior(GoInfinitGateringBehavior {
-                    character_info: scalaman.clone(),
-                    ..b
-                });
-            }
-            _ => {
-                println!("erreur behavior for scalaman");
-            }
-        }
+        let next_beavior_scalaman = scalaman_behavior.next_behavior(
+            &scalaman
+        ).await?;
+        scalaman_behavior = next_beavior_scalaman;
 
-        let next_beavior_ulquiche = ulquiche_behavior.next_behavior().await?.unwrap();
-        match next_beavior_ulquiche {
-            Behavior::GoInfinitGateringBehavior(b) => {
-                ulquiche_behavior = Behavior::GoInfinitGateringBehavior(GoInfinitGateringBehavior {
-                    character_info: ulquiche.clone(),
-                    ..b
-                });
-            }
-            _ => {
-                println!("erreur behavior for ulquiche");
-            }
-        }
+        let next_beavior_ulquiche = ulquiche_behavior.next_behavior(
+            &ulquiche
+        ).await?;
+        ulquiche_behavior = next_beavior_ulquiche;
 
 
         let next_beavior_cerise = cerise_behavior.run().await?;

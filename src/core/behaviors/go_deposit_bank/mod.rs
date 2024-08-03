@@ -1,128 +1,101 @@
 use std::sync::Arc;
 
-use crate::core::behaviors::Behavior;
+use crate::core::behaviors::moving::MovingBehavior;
 use crate::core::characters::Character;
 use crate::core::errors::Error;
 use crate::core::services::can_deposit_item::CanDepositItem;
-use crate::core::services::can_move::CanMove;
 use crate::core::shared::Position;
 
 #[derive(Clone)]
 pub struct GoDepositBankBehavior {
-    pub character_info: Character,
     pub current_state: String,
-    pub bank_position: Position,
-    pub can_move: Arc<Box<dyn CanMove>>,
     pub can_deposit_item: Arc<Box<dyn CanDepositItem>>,
+    pub moving_behavior: MovingBehavior,
 }
 
 impl GoDepositBankBehavior {
     pub fn new(
-        character_info: Character,
-        bank_position: Position,
-        can_move: Arc<Box<dyn CanMove>>,
         can_deposit_item: Arc<Box<dyn CanDepositItem>>,
+        moving_behavior: MovingBehavior,
     ) -> Self {
         Self {
             current_state: "empty".to_string(),
-            character_info,
-            bank_position,
-            can_move,
             can_deposit_item,
+            moving_behavior,
         }
     }
-}
 
-impl GoDepositBankBehavior {
-    pub async fn next_behavior(&self) -> Result<Option<Behavior>, Error> {
+    pub fn reset(&self) -> Self {
+        Self {
+            current_state: "empty".to_string(),
+            ..self.clone()
+        }
+    }
+
+    pub async fn next_behavior(
+        &self,
+        character_info: &Character,
+    ) -> Result<GoDepositBankBehavior, Error> {
+        let cooldown = character_info.cooldown_sec();
+
+        let bank_position = Position::new(4, 1);
+
         match self.current_state.as_str() {
+            _ if cooldown >= 0 => {
+                println!("[{}] in cooldown for {} secs", character_info.name, cooldown);
+                Ok(self.clone())
+            }
             "empty" => {
-                if self.bank_position != self.character_info.position {
-                    println!("[{}] trying to move in bank at {:?}", self.character_info.name, self.bank_position);
-                    match self.can_move.r#move(&self.character_info, &self.bank_position).await {
-                        Ok(_) => {
-                            println!("[{}] - moved to {:?}", self.character_info.name, self.bank_position);
-                            Ok(
-                                Some(
-                                    Behavior::GoDepositBankBehavior(
-                                        GoDepositBankBehavior {
-                                            current_state: "in_bank".to_string(),
-                                            ..self.clone()
-                                        }
-                                    )
-                                )
-                            )
-                        }
-                        Err(e) => {
-                            println!("{e}");
-                            Ok(Some(Behavior::GoDepositBankBehavior(self.clone())))
-                        }
-                    }
-                } else {
-                    println!("[{}] - already in bank at {:?}", self.character_info.name, self.bank_position);
+                let new_moving_behavior = self.moving_behavior.next_behavior(&character_info, &bank_position).await?;
+                if new_moving_behavior.current_state == "finish" {
                     Ok(
-                        Some(
-                            Behavior::GoDepositBankBehavior(
-                                GoDepositBankBehavior {
-                                    current_state: "in_bank".to_string(),
-                                    ..self.clone()
-                                }
-                            )
-                        )
+                        GoDepositBankBehavior {
+                            current_state: "in_bank".to_string(),
+                            moving_behavior: self.moving_behavior.reset(),
+                            ..self.clone()
+                        }
                     )
+                } else {
+                    // comportement non terminer
+                    Ok(
+                        GoDepositBankBehavior {
+                            moving_behavior: new_moving_behavior,
+                            ..self.clone()
+                        }
+                    )
+
                 }
             }
             "in_bank" => {
-                let item = self.character_info.get_first_item();
+                let item = character_info.get_first_item();
                 match item {
                     Some(slot) => {
-                        match self.can_deposit_item.deposit(&self.character_info, &slot.code, slot.quantity as u32).await {
+                        match self.can_deposit_item.deposit(&character_info, &slot.code, slot.quantity as u32).await {
                             Ok(_) => {
-                                println!("[{}] - deposit ok slot: {:?}", self.character_info.name, slot);
+                                println!("[{}] - deposit ok slot: {:?}", character_info.name, slot);
                                 Ok(
-                                    Some(
-                                        Behavior::GoDepositBankBehavior(
-                                            GoDepositBankBehavior {
-                                                current_state: "finish".to_string(),
-                                                ..self.clone()
-                                            }
-                                        )
-                                    )
-                                )
-                            }
-                            Err(e) => {
-                                println!("[{}] - can move in error : {e:?}", self.character_info.name);
-                                Ok(Some(Behavior::GoDepositBankBehavior(self.clone())))
-                            } // on laisse le meme etat certainement un erreur cote serveur
-                        }
-                    }
-                    None => {
-                        println!("[{}] - no deposit because inventory is empty.", self.character_info.name);
-                        Ok(
-                            Some(
-                                Behavior::GoDepositBankBehavior(
                                     GoDepositBankBehavior {
                                         current_state: "finish".to_string(),
                                         ..self.clone()
                                     }
                                 )
-                            )
-                        )
+                            }
+                            Err(e) => {
+                                println!("[{}] - can move in error : {e:?}", character_info.name);
+                                Ok(self.clone())
+                            } // on laisse le meme etat certainement un erreur cote serveur
+                        }
                     }
-                }
-            }
-            "finish" => {
-                // on reinitialise.
-                Ok(
-                    Some(
-                        Behavior::GoDepositBankBehavior(
+                    None => {
+                        println!("[{}] - no deposit because inventory is empty.", character_info.name);
+                        Ok(
                             GoDepositBankBehavior {
-                                current_state: "empty".to_string(),
+                                current_state: "finish".to_string(),
                                 ..self.clone()
                             }
                         )
-                    )
-                )
+                    }
+                }
             }
             _ => {
                 Err(

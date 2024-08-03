@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+
 use crate::core::shared::Position;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

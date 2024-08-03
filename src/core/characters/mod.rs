@@ -6,10 +6,10 @@ use crate::core::shared::Position;
 pub struct Character {
     pub name: String,
     pub position: Position,
-    pub cooldown: i32,
+    // pub cooldown: i32,
     pub cooldown_expiration: DateTime<Utc>,
-    pub task: String,
-    pub task_type: String,
+    // pub task: String,
+    // pub task_type: String,
     pub inventory_max_items: i32,
     pub inventory: Vec<Slot>,
 }
@@ -23,11 +23,16 @@ impl Character {
     pub fn get_first_item(&self) -> Option<Slot> {
         self.inventory.iter().find(|e| e.quantity > 0).map(|e| e.clone())
     }
+
+    pub fn cooldown_sec(&self) -> i64 {
+        let now = Utc::now();
+        (self.cooldown_expiration - now).num_seconds()
+    }
 }
 
 #[derive(Clone, Debug)]
 pub struct Slot {
-    pub slot: i32,
+    // pub slot: i32,
     pub code: String,
     pub quantity: i32,
 }

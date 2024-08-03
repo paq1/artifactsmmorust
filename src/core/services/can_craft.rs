@@ -5,5 +5,5 @@ use crate::core::errors::Error;
 
 #[async_trait]
 pub trait CanCraft {
-    async fn craft(&self, character: &Character, code_item: &String, quantity: u32) -> Result<(), Error>;
+    async fn _craft(&self, character: &Character, code_item: &String, quantity: u32) -> Result<(), Error>;
 }

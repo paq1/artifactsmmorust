@@ -1,4 +1,3 @@
-use futures::{FutureExt, StreamExt};
 use reqwest::Client;
 
 use crate::app::api::map::GameMapApi;
