@@ -38,7 +38,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let url = std::env::var("API_URL_ARTIFACTSMMO")
         .unwrap_or("https://api.artifactsmmo.com".to_string());
     let token = std::env::var("TOKEN_API_ARTIFACTSMMO")
-        .expect("env variable `TOKEN_API_ARTIFACTSMMO` should be set by in .env or in docker-compose env");
+        .expect("env variable `TOKEN_API_ARTIFACTSMMO` should be set by in .env or in docker-compose.yml env");
 
     // services
     let can_fight: Arc<Box<dyn CanFight>> = Arc::new(Box::new(CanFightImpl {
