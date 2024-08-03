@@ -10,6 +10,7 @@ use crate::app::services::can_deposit_item_impl::CanDepositItemImpl;
 use crate::app::services::can_fight_impl::CanFightImpl;
 use crate::app::services::can_gathering_impl::CanGatheringImpl;
 use crate::app::services::can_move_impl::CanMoveImpl;
+use crate::core::behaviors::gathering::GatheringBehavior;
 use crate::core::behaviors::go_deposit_bank::GoDepositBankBehavior;
 use crate::core::behaviors::go_infinit_gathering::GoInfinitGateringBehavior;
 use crate::core::behaviors::infinit_fight::InfinitFight;
@@ -80,6 +81,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         can_deposit_item.clone(),
         moving_behavior_template.clone(),
     );
+    let gathering_behavior_template = GatheringBehavior::new(can_gathering.clone());
 
 
     let mut rustboy_behavior = InfinitFight::new(
@@ -91,14 +93,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut scalaman_behavior = GoInfinitGateringBehavior::new(
         &cooper_position,
-        can_gathering.clone(),
+        gathering_behavior_template.clone(),
         deposit_bank_behavior_template.clone(),
         moving_behavior_template.clone(),
     );
 
     let mut ulquiche_behavior = GoInfinitGateringBehavior::new(
         &cooper_position,
-        can_gathering.clone(),
+        gathering_behavior_template.clone(),
         deposit_bank_behavior_template.clone(),
         moving_behavior_template.clone(),
     );

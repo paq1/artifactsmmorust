@@ -1,12 +1,12 @@
 use std::fmt::{Debug, Display, Formatter};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Error {
     Simple(String),
     WithCode(ErrorWithCode),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ErrorWithCode {
     pub code: String,
     pub title: String,

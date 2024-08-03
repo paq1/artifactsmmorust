@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crate::core::behaviors::gathering::GatheringBehavior;
 use crate::core::behaviors::go_deposit_bank::GoDepositBankBehavior;
 use crate::core::behaviors::moving::MovingBehavior;
 use crate::core::characters::Character;
@@ -11,23 +12,22 @@ use crate::core::shared::Position;
 pub struct GoInfinitGateringBehavior {
     pub current_state: String,
     pub gathering_position: Position,
-    pub can_gathering: Arc<Box<dyn CanGathering>>,
+    pub gathering_behavior: GatheringBehavior,
     pub deposit_bank: GoDepositBankBehavior,
     pub moving_behavior: MovingBehavior,
 }
 
 impl GoInfinitGateringBehavior {
-
     pub fn new(
         gathering_position: &Position,
-        can_gathering: Arc<Box<dyn CanGathering>>,
+        gathering_behavior: GatheringBehavior,
         deposit_bank: GoDepositBankBehavior,
         moving_behavior: MovingBehavior,
     ) -> Self {
         Self {
             current_state: "empty".to_string(),
             gathering_position: gathering_position.clone(),
-            can_gathering,
+            gathering_behavior,
             deposit_bank,
             moving_behavior,
         }
@@ -35,7 +35,7 @@ impl GoInfinitGateringBehavior {
 
     pub async fn next_behavior(
         &self,
-        character: &Character
+        character: &Character,
     ) -> Result<GoInfinitGateringBehavior, Error> {
         let now = chrono::Utc::now();
         let cooldown = character.cooldown_sec();
@@ -45,8 +45,17 @@ impl GoInfinitGateringBehavior {
                 println!("[{}] in cooldown for {} secs", character.name, cooldown);
                 Ok(self.clone())
             }
-            _ if character.is_full_inventory() => {
-                println!("[{}] inventory is full", character.name);
+            _ if character.is_full_inventory() && self.current_state.as_str() == "empty" => {
+                println!("[{}] inventory is full, need deposit !", character.name);
+                Ok(
+                    GoInfinitGateringBehavior {
+                        current_state: "full_inventory".to_string(),
+                        ..self.clone()
+                    }
+                )
+            }
+            "full_inventory" => {
+                println!("[{}] inventory is full, trying deposit", character.name);
                 let deposit_bank = self.deposit_bank.next_behavior(
                     &character
                 ).await?;
@@ -88,51 +97,46 @@ impl GoInfinitGateringBehavior {
                 }
             }
             "in_gathering_zone" => {
-                if character.cooldown_expiration <= now {
-                    println!("[{}] - trying gathering for ", character.name);
-                    match self.can_gathering.gathering(&character)
-                        .await {
-                        Ok(()) => {
-                            println!("[{}] - succeed gathering.", character.name);
+                let new_gathering_behavior_ok = self.gathering_behavior.next_behavior(character).await;
+                match new_gathering_behavior_ok {
+                    Ok(new_gathering_behavior) => {
+                        if new_gathering_behavior.current_state.as_str() == "finish" {
                             Ok(
                                 GoInfinitGateringBehavior {
                                     current_state: "empty".to_string(),
+                                    gathering_behavior: self.gathering_behavior.reset(),
+                                    ..self.clone()
+                                }
+                            )
+                        } else {
+                            Ok(
+                                Self {
+                                    gathering_behavior: new_gathering_behavior,
                                     ..self.clone()
                                 }
                             )
                         }
-                        Err(e) => {
-                            println!("[{}] - failed gathering. error: {e:?}", character.name);
-                            match e {
-                                Error::WithCode(error_with_code) => {
-                                    if error_with_code.status.unwrap_or(0) == 497 {
-                                        println!("[{}] - failed gathering because inventory is full", character.name);
-                                        Ok(
-                                            GoInfinitGateringBehavior {
-                                                current_state: "empty".to_string(),
-                                                ..self.clone()
-                                            }
-                                        )
-                                    } else {
-                                        Ok(
-                                            self.clone(),
-                                        )
-                                    }
-                                }
-                                _ => {
+                    }
+                    Err(e) => {
+                        match e.clone() {
+                            Error::WithCode(error_code) => {
+                                if error_code.status.unwrap_or(0) == 497 {
                                     Ok(
-                                        self.clone(),
+                                        GoInfinitGateringBehavior {
+                                            current_state: "full_inventory".to_string(),
+                                            gathering_behavior: self.gathering_behavior.reset(),
+                                            ..self.clone()
+                                        }
                                     )
-                                } // peut etre un pb serveur, on attend
+                                } else {
+                                    Ok(self.clone())
+                                }
+                            }
+                            _ => {
+                                Ok(self.clone())
                             }
                         }
                     }
-                } else {
-                    let cooldown = character.cooldown_expiration - now;
-                    println!("[{}] in cooldown for {} sec", character.name, cooldown.num_seconds());
-                    Ok(
-                        self.clone(),
-                    ) // cooldown de move pas terminer, on attend
                 }
             }
             _ => {
