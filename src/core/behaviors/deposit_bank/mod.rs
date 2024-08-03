@@ -7,13 +7,13 @@ use crate::core::services::can_deposit_item::CanDepositItem;
 use crate::core::shared::Position;
 
 #[derive(Clone)]
-pub struct GoDepositBankBehavior {
+pub struct DepositBankBehavior {
     pub current_state: String,
     pub can_deposit_item: Arc<Box<dyn CanDepositItem>>,
     pub moving_behavior: MovingBehavior,
 }
 
-impl GoDepositBankBehavior {
+impl DepositBankBehavior {
     pub fn new(
         can_deposit_item: Arc<Box<dyn CanDepositItem>>,
         moving_behavior: MovingBehavior,
@@ -35,7 +35,7 @@ impl GoDepositBankBehavior {
     pub async fn next_behavior(
         &self,
         character_info: &Character,
-    ) -> Result<GoDepositBankBehavior, Error> {
+    ) -> Result<DepositBankBehavior, Error> {
         let cooldown = character_info.cooldown_sec();
 
         let bank_position = Position::new(4, 1);
@@ -49,7 +49,7 @@ impl GoDepositBankBehavior {
                 let new_moving_behavior = self.moving_behavior.next_behavior(&character_info, &bank_position).await?;
                 if new_moving_behavior.current_state == "finish" {
                     Ok(
-                        GoDepositBankBehavior {
+                        DepositBankBehavior {
                             current_state: "in_bank".to_string(),
                             moving_behavior: self.moving_behavior.reset(),
                             ..self.clone()
@@ -58,7 +58,7 @@ impl GoDepositBankBehavior {
                 } else {
                     // comportement non terminer
                     Ok(
-                        GoDepositBankBehavior {
+                        DepositBankBehavior {
                             moving_behavior: new_moving_behavior,
                             ..self.clone()
                         }
@@ -74,7 +74,7 @@ impl GoDepositBankBehavior {
                             Ok(_) => {
                                 println!("[{}] - deposit ok slot: {:?}", character_info.name, slot);
                                 Ok(
-                                    GoDepositBankBehavior {
+                                    DepositBankBehavior {
                                         current_state: "finish".to_string(),
                                         ..self.clone()
                                     }
@@ -89,7 +89,7 @@ impl GoDepositBankBehavior {
                     None => {
                         println!("[{}] - no deposit because inventory is empty.", character_info.name);
                         Ok(
-                            GoDepositBankBehavior {
+                            DepositBankBehavior {
                                 current_state: "finish".to_string(),
                                 ..self.clone()
                             }

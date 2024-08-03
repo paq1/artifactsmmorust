@@ -12,9 +12,9 @@ use crate::app::services::can_gathering_impl::CanGatheringImpl;
 use crate::app::services::can_move_impl::CanMoveImpl;
 use crate::core::behaviors::fight::FightBehavior;
 use crate::core::behaviors::gathering::GatheringBehavior;
-use crate::core::behaviors::go_deposit_bank::GoDepositBankBehavior;
-use crate::core::behaviors::go_infinit_gathering::GoInfinitGateringBehavior;
-use crate::core::behaviors::go_inifinit_fight::GoInfinitFight;
+use crate::core::behaviors::deposit_bank::DepositBankBehavior;
+use crate::core::behaviors::infinit_gathering::InfinitGateringBehavior;
+use crate::core::behaviors::inifinit_fight::InfinitFight;
 use crate::core::behaviors::moving::MovingBehavior;
 use crate::core::services::can_deposit_item::CanDepositItem;
 use crate::core::services::can_fight::CanFight;
@@ -77,35 +77,35 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // behaviors
     let moving_behavior_template: MovingBehavior = MovingBehavior::new(can_move.clone());
-    let deposit_bank_behavior_template = GoDepositBankBehavior::new(
+    let deposit_bank_behavior_template = DepositBankBehavior::new(
         can_deposit_item.clone(),
         moving_behavior_template.clone(),
     );
     let gathering_behavior_template = GatheringBehavior::new(can_gathering.clone());
     let fight_behavior_template = FightBehavior::new(can_fight.clone());
 
-    let mut rustboy_behavior = GoInfinitFight::new(
+    let mut rustboy_behavior = InfinitFight::new(
         &Position { x: 0, y: 1 },
         fight_behavior_template.clone(),
         deposit_bank_behavior_template.clone(),
         moving_behavior_template.clone(),
     );
 
-    let mut scalaman_behavior = GoInfinitGateringBehavior::new(
+    let mut scalaman_behavior = InfinitGateringBehavior::new(
         &cooper_position,
         gathering_behavior_template.clone(),
         deposit_bank_behavior_template.clone(),
         moving_behavior_template.clone(),
     );
 
-    let mut ulquiche_behavior = GoInfinitGateringBehavior::new(
+    let mut ulquiche_behavior = InfinitGateringBehavior::new(
         &cooper_position,
         gathering_behavior_template.clone(),
         deposit_bank_behavior_template.clone(),
         moving_behavior_template.clone(),
     );
 
-    let mut cerise_behavior = GoInfinitFight::new(
+    let mut cerise_behavior = InfinitFight::new(
         &Position { x: 0, y: 1 },
         fight_behavior_template.clone(),
         deposit_bank_behavior_template.clone(),
