@@ -74,10 +74,7 @@ impl DepositBankBehavior {
                             Ok(_) => {
                                 println!("[{}] - deposit ok slot: {:?}", character_info.name, slot);
                                 Ok(
-                                    DepositBankBehavior {
-                                        current_state: "finish".to_string(),
-                                        ..self.clone()
-                                    }
+                                    self.clone()
                                 )
                             }
                             Err(e) => {
