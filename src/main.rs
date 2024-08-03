@@ -10,10 +10,11 @@ use crate::app::services::can_deposit_item_impl::CanDepositItemImpl;
 use crate::app::services::can_fight_impl::CanFightImpl;
 use crate::app::services::can_gathering_impl::CanGatheringImpl;
 use crate::app::services::can_move_impl::CanMoveImpl;
+use crate::core::behaviors::fight::FightBehavior;
 use crate::core::behaviors::gathering::GatheringBehavior;
 use crate::core::behaviors::go_deposit_bank::GoDepositBankBehavior;
 use crate::core::behaviors::go_infinit_gathering::GoInfinitGateringBehavior;
-use crate::core::behaviors::infinit_fight::InfinitFight;
+use crate::core::behaviors::go_inifinit_fight::GoInfinitFight;
 use crate::core::behaviors::moving::MovingBehavior;
 use crate::core::services::can_deposit_item::CanDepositItem;
 use crate::core::services::can_fight::CanFight;
@@ -67,8 +68,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("count of players : {}", players_init.len());
     println!("count of gamemaps : {}", gamemaps.pagination.map(|p| p.total).unwrap_or(-1));
 
-    let rustboy_init = players_init.iter().find(|e| e.name == "RustBoy".to_string()).unwrap();
-    let cerise_init = players_init.iter().find(|e| e.name == "Cerise".to_string()).unwrap();
+    // let rustboy_init = players_init.iter().find(|e| e.name == "RustBoy".to_string()).unwrap();
 
     let cooper_maps = fetch_maps(&http_client, &token, &url, Some(vec![("content_code", "copper_rocks")])).await?;
     println!("cooper_maps len : {}", cooper_maps.data.len());
@@ -82,13 +82,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         moving_behavior_template.clone(),
     );
     let gathering_behavior_template = GatheringBehavior::new(can_gathering.clone());
+    let fight_behavior_template = FightBehavior::new(can_fight.clone());
 
-
-    let mut rustboy_behavior = InfinitFight::new(
-        rustboy_init.clone(),
-        can_fight.clone(),
-        can_move.clone(),
-        can_deposit_item.clone(),
+    let mut rustboy_behavior = GoInfinitFight::new(
+        &Position { x: 0, y: 1 },
+        fight_behavior_template.clone(),
+        deposit_bank_behavior_template.clone(),
+        moving_behavior_template.clone(),
     );
 
     let mut scalaman_behavior = GoInfinitGateringBehavior::new(
@@ -105,11 +105,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         moving_behavior_template.clone(),
     );
 
-    let mut cerise_behavior = InfinitFight::new(
-        cerise_init.clone(),
-        can_fight.clone(),
-        can_move.clone(),
-        can_deposit_item.clone(),
+    let mut cerise_behavior = GoInfinitFight::new(
+        &Position { x: 0, y: 1 },
+        fight_behavior_template.clone(),
+        deposit_bank_behavior_template.clone(),
+        moving_behavior_template.clone(),
     );
 
     let coopermap = fetch_maps_from_position(
@@ -147,11 +147,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
 
-        let next_beavior_rustboy = rustboy_behavior.run().await?;
-        rustboy_behavior = InfinitFight {
-            character_info: rustboy.clone(),
-            ..next_beavior_rustboy.clone()
-        };
+        let next_beavior_rustboy = rustboy_behavior.next_behavior(
+            &rustboy
+        ).await?;
+        rustboy_behavior = next_beavior_rustboy;
 
         let next_beavior_scalaman = scalaman_behavior.next_behavior(
             &scalaman
@@ -164,11 +163,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ulquiche_behavior = next_beavior_ulquiche;
 
 
-        let next_beavior_cerise = cerise_behavior.run().await?;
-        cerise_behavior = InfinitFight {
-            character_info: cerise.clone(),
-            ..next_beavior_cerise.clone()
-        };
+        let next_beavior_cerise = cerise_behavior.next_behavior(
+            &cerise
+        ).await?;
+        cerise_behavior = next_beavior_cerise;
     }
 }
 

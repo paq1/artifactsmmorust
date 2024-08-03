@@ -1,4 +1,4 @@
-use crate::core::behaviors::gathering::GatheringBehavior;
+use crate::core::behaviors::fight::FightBehavior;
 use crate::core::behaviors::go_deposit_bank::GoDepositBankBehavior;
 use crate::core::behaviors::moving::MovingBehavior;
 use crate::core::characters::Character;
@@ -6,34 +6,43 @@ use crate::core::errors::Error;
 use crate::core::shared::Position;
 
 #[derive(Clone)]
-pub struct GoInfinitGateringBehavior {
+pub struct GoInfinitFight {
     pub current_state: String,
-    pub gathering_position: Position,
-    pub gathering_behavior: GatheringBehavior,
+    pub fight_position: Position,
+    pub fight_behavior: FightBehavior,
     pub deposit_bank: GoDepositBankBehavior,
     pub moving_behavior: MovingBehavior,
 }
 
-impl GoInfinitGateringBehavior {
+impl GoInfinitFight {
     pub fn new(
-        gathering_position: &Position,
-        gathering_behavior: GatheringBehavior,
+        fight_position: &Position,
+        fight_behavior: FightBehavior,
         deposit_bank: GoDepositBankBehavior,
         moving_behavior: MovingBehavior,
     ) -> Self {
         Self {
             current_state: "empty".to_string(),
-            gathering_position: gathering_position.clone(),
-            gathering_behavior,
+            fight_position: fight_position.clone(),
+            fight_behavior,
             deposit_bank,
             moving_behavior,
         }
     }
 
+    pub fn is_in_workflow_deposit(&self) -> bool {
+        let workflow_deposit = vec![
+            "full_inventory",
+        ];
+
+        workflow_deposit.contains(&self.current_state.as_str())
+    }
+
     pub async fn next_behavior(
         &self,
         character: &Character,
-    ) -> Result<GoInfinitGateringBehavior, Error> {
+    ) -> Result<GoInfinitFight, Error> {
+
         let cooldown = character.cooldown_sec();
 
         match self.current_state.as_str() {
@@ -41,10 +50,10 @@ impl GoInfinitGateringBehavior {
                 println!("[{}] in cooldown for {} secs", character.name, cooldown);
                 Ok(self.clone())
             }
-            _ if character.is_full_inventory() && self.current_state.as_str() == "empty" => {
+            _ if character.is_full_inventory() && !self.is_in_workflow_deposit() => {
                 println!("[{}] inventory is full, need deposit !", character.name);
                 Ok(
-                    GoInfinitGateringBehavior {
+                    GoInfinitFight {
                         current_state: "full_inventory".to_string(),
                         ..self.clone()
                     }
@@ -74,11 +83,11 @@ impl GoInfinitGateringBehavior {
                 }
             }
             "empty" => {
-                let moving = self.moving_behavior.next_behavior(&character, &self.gathering_position).await?;
+                let moving = self.moving_behavior.next_behavior(&character, &self.fight_position).await?;
                 if moving.current_state.as_str() == "finish" {
                     Ok(
-                        GoInfinitGateringBehavior {
-                            current_state: "in_gathering_zone".to_string(),
+                        GoInfinitFight {
+                            current_state: "in_fight_zone".to_string(),
                             moving_behavior: self.moving_behavior.reset(),
                             ..self.clone()
                         }
@@ -92,22 +101,22 @@ impl GoInfinitGateringBehavior {
                     )
                 }
             }
-            "in_gathering_zone" => {
-                let new_gathering_behavior_ok = self.gathering_behavior.next_behavior(character).await;
-                match new_gathering_behavior_ok {
-                    Ok(new_gathering_behavior) => {
-                        if new_gathering_behavior.current_state.as_str() == "finish" {
+            "in_fight_zone" => {
+                let new_fight_behavior_ok = self.fight_behavior.next_behavior(character).await;
+                match new_fight_behavior_ok {
+                    Ok(new_fight_behavior) => {
+                        if new_fight_behavior.current_state.as_str() == "finish" {
                             Ok(
-                                GoInfinitGateringBehavior {
+                                GoInfinitFight {
                                     current_state: "empty".to_string(),
-                                    gathering_behavior: self.gathering_behavior.reset(),
+                                    fight_behavior: self.fight_behavior.reset(),
                                     ..self.clone()
                                 }
                             )
                         } else {
                             Ok(
                                 Self {
-                                    gathering_behavior: new_gathering_behavior,
+                                    fight_behavior: new_fight_behavior,
                                     ..self.clone()
                                 }
                             )
@@ -118,9 +127,9 @@ impl GoInfinitGateringBehavior {
                             Error::WithCode(error_code) => {
                                 if error_code.status.unwrap_or(0) == 497 {
                                     Ok(
-                                        GoInfinitGateringBehavior {
+                                        GoInfinitFight {
                                             current_state: "full_inventory".to_string(),
-                                            gathering_behavior: self.gathering_behavior.reset(),
+                                            fight_behavior: self.fight_behavior.reset(),
                                             ..self.clone()
                                         }
                                     )
