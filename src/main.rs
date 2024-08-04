@@ -97,7 +97,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let mut rustboy_behavior = InfinitFight::new(
-        &Position { x: 0, y: 1 },
+        &Position { x: 0, y: -1 },
         fight_behavior_template.clone(),
         deposit_bank_behavior_template.clone(),
         moving_behavior_template.clone(),
@@ -111,8 +111,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let mut ulquiche_behavior = InfinitGateringBehavior::new(
-        &cooper_position,
+        &Position::new(-1, 0),
         gathering_behavior_template.clone(),
+        deposit_bank_behavior_template.clone(),
+        moving_behavior_template.clone(),
+    );
+
+    let mut jeanne_behavior = InfinitFight::new(
+        &Position { x: 4, y: -1 },
+        fight_behavior_template.clone(),
         deposit_bank_behavior_template.clone(),
         moving_behavior_template.clone(),
     );
@@ -144,11 +151,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let scalaman = players_updated.iter().find(|e| e.name == "ScalaMan".to_string()).unwrap();
                 let ulquiche = players_updated.iter().find(|e| e.name == "Ulquiche".to_string()).unwrap();
                 let cerise = players_updated.iter().find(|e| e.name == "Cerise".to_string()).unwrap();
+                let jeanne = players_updated.iter().find(|e| e.name == "Jeanne".to_string()).unwrap();
                 let now = Utc::now();
 
                 let lowest_cooldown = players_updated
                     .iter()
-                    // .filter(|p| p.name != "Ulquiche".to_string())
+                    // .filter(|p| p.name != "Jeanne".to_string())
                     .map(|p| {
                         let cooldown = (p.cooldown_expiration - now).num_seconds();
                         println!("cooldown for {} is {}", p.name, cooldown);
@@ -178,11 +186,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ).await?;
                 ulquiche_behavior = next_beavior_ulquiche;
 
-
                 let next_beavior_cerise = cerise_behavior.next_behavior(
                     &cerise
                 ).await?;
                 cerise_behavior = next_beavior_cerise;
+
+                let next_beavior_jeanne = jeanne_behavior.next_behavior(
+                    &jeanne
+                ).await?;
+                jeanne_behavior = next_beavior_jeanne;
             }
             Err(e) => {
                 println!("[SERVER] no fetch for characters, we wait 30 sec for next call");
