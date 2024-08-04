@@ -94,6 +94,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let first_coopermaps = cooper_maps.data.first().unwrap();
     let cooper_position = first_coopermaps.get_position();
 
+    let _bank_position = Position::new(4, 1);
+    let _forge_position = Position::new(1, 5);
+    let _scierie_position = Position::new(-2, -3);
+    let _armurerie_position = Position::new(3, 1);
+    let chicken_position = Position::new(0, 1);
+
     // behaviors
     let moving_behavior_template: MovingBehavior = MovingBehavior::new(can_move.clone());
     let deposit_bank_behavior_template = DepositBankBehavior::new(
@@ -129,18 +135,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         moving_behavior_template.clone(),
     );
 
-    // let mut jeanne_behavior = InfinitFight::new(
-    //     &Position { x: 4, y: -1 },
-    //     fight_behavior_template.clone(),
-    //     deposit_bank_behavior_template.clone(),
-    //     moving_behavior_template.clone(),
-    // );
-    let mut jeanne_behavior = InfinitCraftBehavior::new(
-        moving_behavior_template.clone(),
+    let mut jeanne_behavior = InfinitFight::new(
+        &chicken_position,
+        fight_behavior_template.clone(),
         deposit_bank_behavior_template.clone(),
-        withdraw_bank_behavior_template.clone(),
-        crafting_behavior_template.clone(),
+        moving_behavior_template.clone(),
     );
+
+    // let mut jeanne_behavior = InfinitCraftBehavior::new(
+    //     moving_behavior_template.clone(),
+    //     deposit_bank_behavior_template.clone(),
+    //     withdraw_bank_behavior_template.clone(),
+    //     crafting_behavior_template.clone(),
+    // );
     // let mut ulquiche_behavior = withdraw_bank_behavior_template.clone();
 
     let mut cerise_behavior = InfinitFight::new(
@@ -156,10 +163,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         url.as_str(),
         &Position::new(2, 0),
     ).await;
-
-    let bank_position = Position::new(4, 1);
-    let _forge_position = Position::new(1, 5);
-    let scierie_position = Position::new(-2, -3);
 
     println!("gamemap cooper {coopermap:?}");
 
@@ -213,14 +216,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ).await?;
                 cerise_behavior = next_beavior_cerise;
 
-                let next_behavior_jeanne = jeanne_behavior.next_behavior(
-                    &jeanne,
-                    &bank_position,
-                    &scierie_position,
-                    ("ash_wood", 6),
-                    "ash_plank",
+                let next_beavior_jeanne = jeanne_behavior.next_behavior(
+                    &jeanne
                 ).await?;
-                jeanne_behavior = next_behavior_jeanne;
+                jeanne_behavior = next_beavior_jeanne;
+
+                // let next_behavior_jeanne = jeanne_behavior.next_behavior(
+                //     &jeanne,
+                //     &bank_position,
+                //     &armurerie_position,
+                //     ("ash_plank", 3),
+                //     "wooden_shield",
+                // ).await?;
+                // jeanne_behavior = next_behavior_jeanne;
             }
             Err(e) => {
                 println!("[SERVER] no fetch for characters, we wait 30 sec for next call");
