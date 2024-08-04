@@ -157,6 +157,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         &Position::new(2, 0),
     ).await;
 
+    let bank_position = Position::new(4, 1);
+    let _forge_position = Position::new(1, 5);
+    let scierie_position = Position::new(-2, -3);
+
     println!("gamemap cooper {coopermap:?}");
 
 
@@ -211,10 +215,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                 let next_behavior_jeanne = jeanne_behavior.next_behavior(
                     &jeanne,
-                    &Position::new(4,1),
-                    &Position::new(1,5),
-                    ("copper_ore", 6),
-                    "copper",
+                    &bank_position,
+                    &scierie_position,
+                    ("ash_wood", 6),
+                    "ash_plank",
                 ).await?;
                 jeanne_behavior = next_behavior_jeanne;
             }
