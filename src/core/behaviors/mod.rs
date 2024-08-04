@@ -5,4 +5,5 @@ pub mod gathering;
 pub mod fight;
 pub mod inifinit_fight;
 pub mod withdraw_bank;
-mod crafting;
+pub mod crafting;
+pub mod infinit_craft;

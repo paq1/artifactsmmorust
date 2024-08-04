@@ -6,18 +6,22 @@ use tokio::time;
 
 use crate::app::characters::infos::fetch_characters;
 use crate::app::map::infos::{fetch_maps, fetch_maps_from_position};
+use crate::app::services::can_craft_impl::CanCraftImpl;
 use crate::app::services::can_deposit_item_impl::CanDepositItemImpl;
 use crate::app::services::can_fight_impl::CanFightImpl;
 use crate::app::services::can_gathering_impl::CanGatheringImpl;
 use crate::app::services::can_move_impl::CanMoveImpl;
 use crate::app::services::can_withdraw_item_impl::CanWithdrawItemImpl;
+use crate::core::behaviors::crafting::CraftingBehavior;
 use crate::core::behaviors::fight::FightBehavior;
 use crate::core::behaviors::gathering::GatheringBehavior;
 use crate::core::behaviors::deposit_bank::DepositBankBehavior;
+use crate::core::behaviors::infinit_craft::InfinitCraftBehavior;
 use crate::core::behaviors::infinit_gathering::InfinitGateringBehavior;
 use crate::core::behaviors::inifinit_fight::InfinitFight;
 use crate::core::behaviors::moving::MovingBehavior;
 use crate::core::behaviors::withdraw_bank::WithdrawBankBehavior;
+use crate::core::services::can_craft::CanCraft;
 use crate::core::services::can_deposit_item::CanDepositItem;
 use crate::core::services::can_fight::CanFight;
 use crate::core::services::can_gathering::CanGathering;
@@ -66,6 +70,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         token: token.clone(),
         http_client: http_client.clone(),
     }));
+    let can_craft: Arc<Box<dyn CanCraft>> = Arc::new(Box::new(
+        CanCraftImpl {
+            url: url.clone(),
+            token: token.clone(),
+            http_client: http_client.clone(),
+        }
+    ));
 
     println!("chargement des chars");
     let players_init = fetch_characters(&http_client, &token, &url).await?.data;
@@ -91,10 +102,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     let gathering_behavior_template = GatheringBehavior::new(can_gathering.clone());
     let fight_behavior_template = FightBehavior::new(can_fight.clone());
-    let _withdraw_bank_behavior_template = WithdrawBankBehavior::new(
+    let withdraw_bank_behavior_template = WithdrawBankBehavior::new(
         can_withdraw_item.clone(),
         moving_behavior_template.clone(),
     );
+    let crafting_behavior_template = CraftingBehavior::new(can_craft.clone(), moving_behavior_template.clone());
 
     let mut rustboy_behavior = InfinitFight::new(
         &Position { x: 0, y: -1 },
@@ -117,11 +129,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         moving_behavior_template.clone(),
     );
 
-    let mut jeanne_behavior = InfinitFight::new(
-        &Position { x: 4, y: -1 },
-        fight_behavior_template.clone(),
-        deposit_bank_behavior_template.clone(),
+    // let mut jeanne_behavior = InfinitFight::new(
+    //     &Position { x: 4, y: -1 },
+    //     fight_behavior_template.clone(),
+    //     deposit_bank_behavior_template.clone(),
+    //     moving_behavior_template.clone(),
+    // );
+    let mut jeanne_behavior = InfinitCraftBehavior::new(
         moving_behavior_template.clone(),
+        deposit_bank_behavior_template.clone(),
+        withdraw_bank_behavior_template.clone(),
+        crafting_behavior_template.clone(),
     );
     // let mut ulquiche_behavior = withdraw_bank_behavior_template.clone();
 
@@ -191,10 +209,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ).await?;
                 cerise_behavior = next_beavior_cerise;
 
-                let next_beavior_jeanne = jeanne_behavior.next_behavior(
-                    &jeanne
+                let next_behavior_jeanne = jeanne_behavior.next_behavior(
+                    &jeanne,
+                    &Position::new(4,1),
+                    &Position::new(1,5),
+                    ("copper_ore", 6),
+                    "copper",
                 ).await?;
-                jeanne_behavior = next_beavior_jeanne;
+                jeanne_behavior = next_behavior_jeanne;
             }
             Err(e) => {
                 println!("[SERVER] no fetch for characters, we wait 30 sec for next call");
