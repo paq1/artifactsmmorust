@@ -16,8 +16,16 @@ pub struct Character {
 
 impl Character {
     pub fn is_full_inventory(&self) -> bool {
-        let current_quantity: u32 = self.inventory.iter().map(|x| x.quantity).sum();
+        let current_quantity: u32 = self.get_current_quantity();
         current_quantity >= self.inventory_max_items
+    }
+
+    pub fn get_quantity_available(&self) -> u32 {
+        self.inventory_max_items - self.get_current_quantity()
+    }
+
+    pub fn get_current_quantity(&self) -> u32 {
+        self.inventory.iter().map(|x| x.quantity).sum()
     }
 
     pub fn get_first_item(&self) -> Option<Slot> {

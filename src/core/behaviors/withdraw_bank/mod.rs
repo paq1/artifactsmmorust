@@ -36,6 +36,8 @@ impl WithdrawBankBehavior {
     pub async fn next_behavior(
         &self,
         character_info: &Character, // fixme passer le code et la quantite
+        item_code: &str,
+        quantity: Option<u32>, // if None, take all
     ) -> Result<WithdrawBankBehavior, Error> {
         let cooldown = character_info.cooldown_sec();
 
@@ -68,24 +70,9 @@ impl WithdrawBankBehavior {
                 }
             }
             "in_bank" => {
-                let item = character_info.get_first_item();
-                match item {
-                    Some(slot) => {
-                        match self.can_withdraw_item.withdraw(&character_info, &slot.code, slot.quantity as u32).await {
-                            Ok(_) => {
-                                println!("[{}] - withdraw ok slot: {:?}", character_info.name, slot);
-                                Ok(
-                                    self.clone()
-                                )
-                            }
-                            Err(e) => {
-                                println!("[{}] - can move in error : {e:?}", character_info.name);
-                                Ok(self.clone())
-                            } // on laisse le meme etat certainement un erreur cote serveur
-                        }
-                    }
-                    None => {
-                        println!("[{}] - no withdraw because inventory is empty.", character_info.name);
+                match self.can_withdraw_item.withdraw(&character_info, &item_code.to_string(), quantity.unwrap_or(character_info.get_quantity_available())).await {
+                    Ok(_) => {
+                        println!("[{}] - withdraw ok ", character_info.name);
                         Ok(
                             WithdrawBankBehavior {
                                 current_state: "finish".to_string(),
@@ -93,6 +80,10 @@ impl WithdrawBankBehavior {
                             }
                         )
                     }
+                    Err(e) => {
+                        println!("[{}] - can withdraw item in error : {e:?}", character_info.name);
+                        Ok(self.clone())
+                    } // on laisse le meme etat certainement un erreur cote serveur
                 }
             }
             _ => {
