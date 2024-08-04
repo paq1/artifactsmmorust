@@ -13,7 +13,7 @@ pub struct CharacterApi {
     pub cooldown_expiration: DateTime<Utc>,
     // pub task: String,
     // pub task_type: String,
-    pub inventory_max_items: i32,
+    pub inventory_max_items: u32,
     pub inventory: Vec<SlotApi>,
 }
 
@@ -21,7 +21,7 @@ pub struct CharacterApi {
 pub struct SlotApi {
     // pub slot: i32,
     pub code: String,
-    pub quantity: i32,
+    pub quantity: u32,
 }
 
 impl From<SlotApi> for Slot {

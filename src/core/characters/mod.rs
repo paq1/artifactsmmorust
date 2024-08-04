@@ -10,13 +10,13 @@ pub struct Character {
     pub cooldown_expiration: DateTime<Utc>,
     // pub task: String,
     // pub task_type: String,
-    pub inventory_max_items: i32,
+    pub inventory_max_items: u32,
     pub inventory: Vec<Slot>,
 }
 
 impl Character {
     pub fn is_full_inventory(&self) -> bool {
-        let current_quantity: i32 = self.inventory.iter().map(|x| x.quantity).sum();
+        let current_quantity: u32 = self.inventory.iter().map(|x| x.quantity).sum();
         current_quantity >= self.inventory_max_items
     }
 
@@ -34,5 +34,5 @@ impl Character {
 pub struct Slot {
     // pub slot: i32,
     pub code: String,
-    pub quantity: i32,
+    pub quantity: u32,
 }
