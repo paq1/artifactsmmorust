@@ -32,7 +32,7 @@ impl CanWithdrawItem for CanWithdrawItemImpl {
                 Error::WithCode(
                     ErrorWithCode {
                         code: "00DEPERR".to_string(),
-                        title: "Erreur lors dépot".to_string(),
+                        title: "Erreur lors retrait".to_string(),
                         description: None,
                         status: Some(response.status().as_u16() as i32),
                     }
