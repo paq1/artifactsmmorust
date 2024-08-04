@@ -136,50 +136,61 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 
     loop {
-        let players_updated = fetch_characters(&http_client, &token, &url).await?.data;
-        let rustboy = players_updated.iter().find(|e| e.name == "RustBoy".to_string()).unwrap();
-        let scalaman = players_updated.iter().find(|e| e.name == "ScalaMan".to_string()).unwrap();
-        let ulquiche = players_updated.iter().find(|e| e.name == "Ulquiche".to_string()).unwrap();
-        let cerise = players_updated.iter().find(|e| e.name == "Cerise".to_string()).unwrap();
-        let now = Utc::now();
+        let fetch_characters_query = fetch_characters(&http_client, &token, &url).await;
+        match fetch_characters_query {
+            Ok(many) => {
+                let players_updated = many.data;
+                let rustboy = players_updated.iter().find(|e| e.name == "RustBoy".to_string()).unwrap();
+                let scalaman = players_updated.iter().find(|e| e.name == "ScalaMan".to_string()).unwrap();
+                let ulquiche = players_updated.iter().find(|e| e.name == "Ulquiche".to_string()).unwrap();
+                let cerise = players_updated.iter().find(|e| e.name == "Cerise".to_string()).unwrap();
+                let now = Utc::now();
 
-        let lowest_cooldown = players_updated
-            .iter()
-            // .filter(|p| p.name != "Ulquiche".to_string())
-            .map(|p| {
-                let cooldown = (p.cooldown_expiration - now).num_seconds();
-                println!("cooldown for {} is {}", p.name, cooldown);
-                cooldown
-            })
-            .min()
-            .unwrap_or(1);
+                let lowest_cooldown = players_updated
+                    .iter()
+                    // .filter(|p| p.name != "Ulquiche".to_string())
+                    .map(|p| {
+                        let cooldown = (p.cooldown_expiration - now).num_seconds();
+                        println!("cooldown for {} is {}", p.name, cooldown);
+                        cooldown
+                    })
+                    .min()
+                    .unwrap_or(1);
 
-        if lowest_cooldown >= 0 {
-            println!("waiting {lowest_cooldown}");
-            tokio::time::sleep(time::Duration::from_secs(lowest_cooldown as u64)).await;
-        }
-
-
-        let next_beavior_rustboy = rustboy_behavior.next_behavior(
-            &rustboy
-        ).await?;
-        rustboy_behavior = next_beavior_rustboy;
-
-        let next_beavior_scalaman = scalaman_behavior.next_behavior(
-            &scalaman
-        ).await?;
-        scalaman_behavior = next_beavior_scalaman;
-
-        let next_beavior_ulquiche = ulquiche_behavior.next_behavior(
-            &ulquiche
-        ).await?;
-        ulquiche_behavior = next_beavior_ulquiche;
+                if lowest_cooldown >= 0 {
+                    println!("waiting {lowest_cooldown}");
+                    tokio::time::sleep(time::Duration::from_secs(lowest_cooldown as u64)).await;
+                }
 
 
-        let next_beavior_cerise = cerise_behavior.next_behavior(
-            &cerise
-        ).await?;
-        cerise_behavior = next_beavior_cerise;
+                let next_beavior_rustboy = rustboy_behavior.next_behavior(
+                    &rustboy
+                ).await?;
+                rustboy_behavior = next_beavior_rustboy;
+
+                let next_beavior_scalaman = scalaman_behavior.next_behavior(
+                    &scalaman
+                ).await?;
+                scalaman_behavior = next_beavior_scalaman;
+
+                let next_beavior_ulquiche = ulquiche_behavior.next_behavior(
+                    &ulquiche
+                ).await?;
+                ulquiche_behavior = next_beavior_ulquiche;
+
+
+                let next_beavior_cerise = cerise_behavior.next_behavior(
+                    &cerise
+                ).await?;
+                cerise_behavior = next_beavior_cerise;
+            }
+            Err(e) => {
+                println!("[SERVER] no fetch for characters, we wait 30 sec for next call");
+                println!("[SERVER] details : {e:?}");
+                tokio::time::sleep(time::Duration::from_secs(30)).await;
+            }
+        };
+
     }
 }
 
