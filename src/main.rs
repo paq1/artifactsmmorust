@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use chrono::Utc;
@@ -13,10 +14,9 @@ use crate::app::services::can_gathering_impl::CanGatheringImpl;
 use crate::app::services::can_move_impl::CanMoveImpl;
 use crate::app::services::can_withdraw_item_impl::CanWithdrawItemImpl;
 use crate::core::behaviors::crafting::CraftingBehavior;
+use crate::core::behaviors::deposit_bank::DepositBankBehavior;
 use crate::core::behaviors::fight::FightBehavior;
 use crate::core::behaviors::gathering::GatheringBehavior;
-use crate::core::behaviors::deposit_bank::DepositBankBehavior;
-use crate::core::behaviors::infinit_craft::InfinitCraftBehavior;
 use crate::core::behaviors::infinit_gathering::InfinitGateringBehavior;
 use crate::core::behaviors::inifinit_fight::InfinitFight;
 use crate::core::behaviors::moving::MovingBehavior;
@@ -94,11 +94,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let first_coopermaps = cooper_maps.data.first().unwrap();
     let cooper_position = first_coopermaps.get_position();
 
-    let _bank_position = Position::new(4, 1);
-    let _forge_position = Position::new(1, 5);
-    let _scierie_position = Position::new(-2, -3);
-    let _armurerie_position = Position::new(3, 1);
-    let chicken_position = Position::new(0, 1);
+    let static_positions = HashMap::from([
+        ("bank", Position::new(4, 1)),
+        ("forge", Position::new(1, 5)),
+        ("scierie", Position::new(-2, -3)),
+        ("armurerie", Position::new(3, 1)),
+        ("copper", Position::new(2, 0)),
+        ("chicken", Position::new(0, 1)),
+        ("cow", Position::new(0, 2)),
+        ("blue_slime", Position::new(0, -2)),
+        ("spruce_tree", Position::new(2, 6)),
+    ]);
 
     // behaviors
     let moving_behavior_template: MovingBehavior = MovingBehavior::new(can_move.clone());
@@ -108,14 +114,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     let gathering_behavior_template = GatheringBehavior::new(can_gathering.clone());
     let fight_behavior_template = FightBehavior::new(can_fight.clone());
-    let withdraw_bank_behavior_template = WithdrawBankBehavior::new(
+    let _withdraw_bank_behavior_template = WithdrawBankBehavior::new(
         can_withdraw_item.clone(),
         moving_behavior_template.clone(),
     );
-    let crafting_behavior_template = CraftingBehavior::new(can_craft.clone(), moving_behavior_template.clone());
+    let _crafting_behavior_template = CraftingBehavior::new(can_craft.clone(), moving_behavior_template.clone());
 
     let mut rustboy_behavior = InfinitFight::new(
-        &Position { x: 0, y: -1 },
+        static_positions.get("blue_slime").unwrap(),
         fight_behavior_template.clone(),
         deposit_bank_behavior_template.clone(),
         moving_behavior_template.clone(),
@@ -129,14 +135,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let mut ulquiche_behavior = InfinitGateringBehavior::new(
-        &Position::new(-1, 0),
+        static_positions.get("spruce_tree").unwrap(),
         gathering_behavior_template.clone(),
         deposit_bank_behavior_template.clone(),
         moving_behavior_template.clone(),
     );
 
     let mut jeanne_behavior = InfinitFight::new(
-        &chicken_position,
+        static_positions.get("cow").unwrap(),
         fight_behavior_template.clone(),
         deposit_bank_behavior_template.clone(),
         moving_behavior_template.clone(),
@@ -148,20 +154,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //     withdraw_bank_behavior_template.clone(),
     //     crafting_behavior_template.clone(),
     // );
-    // let mut ulquiche_behavior = withdraw_bank_behavior_template.clone();
 
     let mut cerise_behavior = InfinitFight::new(
-        &Position { x: 0, y: 1 },
+        static_positions.get("chicken").unwrap(),
         fight_behavior_template.clone(),
         deposit_bank_behavior_template.clone(),
         moving_behavior_template.clone(),
     );
 
+    // let mut cerise_behavior = InfinitCraftBehavior::new(
+    //     moving_behavior_template.clone(),
+    //     deposit_bank_behavior_template.clone(),
+    //     withdraw_bank_behavior_template.clone(),
+    //     crafting_behavior_template.clone(),
+    // );
+
     let coopermap = fetch_maps_from_position(
         &http_client.clone(),
         token.as_str(),
         url.as_str(),
-        &Position::new(2, 0),
+        static_positions.get("copper").unwrap(),
     ).await;
 
     println!("gamemap cooper {coopermap:?}");
@@ -216,6 +228,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ).await?;
                 cerise_behavior = next_beavior_cerise;
 
+                // let next_behavior_cerise = cerise_behavior.next_behavior(
+                //     &cerise,
+                //     &bank_position,
+                //     &Position::new(2, 1),
+                //     ("ash_plank", 3),
+                //     "wooden_stick",
+                // ).await?;
+                // cerise_behavior = next_behavior_cerise;
+
                 let next_beavior_jeanne = jeanne_behavior.next_behavior(
                     &jeanne
                 ).await?;
@@ -236,7 +257,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 tokio::time::sleep(time::Duration::from_secs(30)).await;
             }
         };
-
     }
 }
 
