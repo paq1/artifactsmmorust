@@ -91,8 +91,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let cooper_maps = fetch_maps(&http_client, &token, &url, Some(vec![("content_code", "copper_rocks")])).await?;
     println!("cooper_maps len : {}", cooper_maps.data.len());
-    let first_coopermaps = cooper_maps.data.first().unwrap();
-    let cooper_position = first_coopermaps.get_position();
 
     let static_positions = HashMap::from([
         ("bank", Position::new(4, 1)),
@@ -100,6 +98,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ("scierie", Position::new(-2, -3)),
         ("armurerie", Position::new(3, 1)),
         ("copper", Position::new(2, 0)),
+        ("iron", Position::new(1, 7)),
         ("chicken", Position::new(0, 1)),
         ("cow", Position::new(0, 2)),
         ("blue_slime", Position::new(0, -2)),
@@ -128,7 +127,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let mut scalaman_behavior = InfinitGateringBehavior::new(
-        &cooper_position,
+        &static_positions.get("iron").unwrap(),
         gathering_behavior_template.clone(),
         deposit_bank_behavior_template.clone(),
         moving_behavior_template.clone(),
@@ -155,9 +154,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //     crafting_behavior_template.clone(),
     // );
 
-    let mut cerise_behavior = InfinitFight::new(
-        static_positions.get("chicken").unwrap(),
-        fight_behavior_template.clone(),
+    let mut cerise_behavior = InfinitGateringBehavior::new(
+        static_positions.get("iron").unwrap(),
+        gathering_behavior_template.clone(),
         deposit_bank_behavior_template.clone(),
         moving_behavior_template.clone(),
     );
