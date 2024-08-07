@@ -99,9 +99,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ("armurerie", Position::new(3, 1)),
         ("copper", Position::new(2, 0)),
         ("iron", Position::new(1, 7)),
+        ("coal", Position::new(1, 6)),
         ("chicken", Position::new(0, 1)),
         ("cow", Position::new(0, 2)),
+        ("wolf", Position::new(-2, 1)),
         ("blue_slime", Position::new(0, -2)),
+        ("red_slime", Position::new(1, -1)),
         ("spruce_tree", Position::new(2, 6)),
     ]);
 
@@ -120,14 +123,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _crafting_behavior_template = CraftingBehavior::new(can_craft.clone(), moving_behavior_template.clone());
 
     let mut rustboy_behavior = InfinitFight::new(
-        static_positions.get("blue_slime").unwrap(),
+        static_positions.get("red_slime").unwrap(),
         fight_behavior_template.clone(),
         deposit_bank_behavior_template.clone(),
         moving_behavior_template.clone(),
     );
 
     let mut scalaman_behavior = InfinitGateringBehavior::new(
-        &static_positions.get("iron").unwrap(),
+        &static_positions.get("coal").unwrap(),
         gathering_behavior_template.clone(),
         deposit_bank_behavior_template.clone(),
         moving_behavior_template.clone(),
@@ -141,7 +144,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let mut jeanne_behavior = InfinitFight::new(
-        static_positions.get("cow").unwrap(),
+        static_positions.get("red_slime").unwrap(),
         fight_behavior_template.clone(),
         deposit_bank_behavior_template.clone(),
         moving_behavior_template.clone(),
@@ -155,7 +158,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // );
 
     let mut cerise_behavior = InfinitGateringBehavior::new(
-        static_positions.get("iron").unwrap(),
+        static_positions.get("coal").unwrap(),
         gathering_behavior_template.clone(),
         deposit_bank_behavior_template.clone(),
         moving_behavior_template.clone(),
