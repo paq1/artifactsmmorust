@@ -1,14 +1,17 @@
+use std::sync::Arc;
 use crate::core::behaviors::crafting::CraftingBehavior;
 use crate::core::behaviors::deposit_bank::DepositBankBehavior;
 use crate::core::behaviors::moving::MovingBehavior;
 use crate::core::behaviors::withdraw_bank::WithdrawBankBehavior;
 use crate::core::characters::Character;
 use crate::core::errors::Error;
+use crate::core::services::can_get_bank::CanGetBank;
 use crate::core::shared::Position;
 
 #[derive(Clone)]
 pub struct InfinitCraftBehavior {
     pub current_state: String,
+    pub can_get_bank: Arc<Box<dyn CanGetBank>>,
     pub moving_behavior: MovingBehavior,
     pub deposit_bank_behavior: DepositBankBehavior,
     pub withdraw_bank_behavior: WithdrawBankBehavior,
@@ -17,6 +20,7 @@ pub struct InfinitCraftBehavior {
 
 impl InfinitCraftBehavior {
     pub fn new(
+        can_get_bank: Arc<Box<dyn CanGetBank>>,
         moving_behavior: MovingBehavior,
         deposit_bank_behavior: DepositBankBehavior,
         withdraw_bank_behavior: WithdrawBankBehavior,
@@ -24,6 +28,7 @@ impl InfinitCraftBehavior {
     ) -> Self {
         Self {
             current_state: "empty".to_string(),
+            can_get_bank,
             moving_behavior,
             deposit_bank_behavior,
             withdraw_bank_behavior,
@@ -100,49 +105,60 @@ impl InfinitCraftBehavior {
 
                 let taille_max_inventaire = player.inventory_max_items;
 
-                let mandatory = ingredients
+                let mandatories = ingredients
                     .iter().map(|(code, quantity)| {
                     (*code, taille_max_inventaire * quantity / global_quantity_for_one_recipe)
                 }).collect::<Vec<_>>();
 
                 let inventory_codes_only: Vec<String> = player.inventory.iter().map(|s| s.code.clone()).collect::<Vec<_>>();
 
-                let maybe_ingredient_missing = mandatory
+                let maybe_ingredient_missing = mandatories
                     .iter()
                     .find(|(code, _)| {
                         !inventory_codes_only.contains(&code.to_string())
                     })
                     .map(|(code, quantity)| (*code, *quantity));
 
-                match maybe_ingredient_missing {
-                    Some((code, quantity)) => {
-                        let next_withdraw_item = self.withdraw_bank_behavior.next_behavior(player, code, Some(quantity)).await?;
-                        if next_withdraw_item.current_state.as_str() == "finish" {
+                if !self.can_take_in_bank(&mandatories).await {
+                    println!("[{}] - pas assez d'ingredients pour craft", player.name);
+                    Ok(
+                        InfinitCraftBehavior {
+                            current_state: "finish".to_string(),
+                            withdraw_bank_behavior: self.withdraw_bank_behavior.reset(),
+                            ..self.clone()
+                        }
+                    )
+                } else {
+                    match maybe_ingredient_missing {
+                        Some((code, quantity)) => {
+                            let next_withdraw_item = self.withdraw_bank_behavior.next_behavior(player, code, Some(quantity)).await?;
+                            if next_withdraw_item.current_state.as_str() == "finish" {
+                                Ok(
+                                    InfinitCraftBehavior {
+                                        current_state: "deposit_all".to_string(),
+                                        withdraw_bank_behavior: self.withdraw_bank_behavior.reset(),
+                                        ..self.clone()
+                                    }
+                                )
+                            }
+                            else {
+                                Ok(
+                                    InfinitCraftBehavior {
+                                        withdraw_bank_behavior: next_withdraw_item,
+                                        ..self.clone()
+                                    }
+                                )
+                            }
+                        }
+                        None => {
                             Ok(
                                 InfinitCraftBehavior {
-                                    current_state: "deposit_all".to_string(),
+                                    current_state: "withdraw_all".to_string(),
                                     withdraw_bank_behavior: self.withdraw_bank_behavior.reset(),
                                     ..self.clone()
                                 }
                             )
                         }
-                        else {
-                            Ok(
-                                InfinitCraftBehavior {
-                                    withdraw_bank_behavior: next_withdraw_item,
-                                    ..self.clone()
-                                }
-                            )
-                        }
-                    }
-                    None => {
-                        Ok(
-                            InfinitCraftBehavior {
-                                current_state: "withdraw_all".to_string(),
-                                withdraw_bank_behavior: self.withdraw_bank_behavior.reset(),
-                                ..self.clone()
-                            }
-                        )
                     }
                 }
             }
@@ -171,6 +187,26 @@ impl InfinitCraftBehavior {
                     Error::Simple("invalid transition".to_string())
                 )
             }
+        }
+    }
+
+
+    pub async fn can_take_in_bank(&self, mandatorie: &Vec<(&str, u32)>) -> bool {
+        match self.can_get_bank.get_items().await {
+            Ok(table) => {
+                let maybevalid = table.iter().map(|(bank_code, bank_quantity)| {
+                    let maybe_item_found = mandatorie.into_iter().find(|(mandatory_code, mandatory_quantity)| {
+                        *mandatory_code == bank_code.as_str() && mandatory_quantity <= bank_quantity
+                    });
+                    match maybe_item_found {
+                        Some(_) => true,
+                        None => false
+                    }
+                }).collect::<Vec<_>>();
+
+                !maybevalid.contains(&false)
+            }
+            Err(_) => false
         }
     }
 }

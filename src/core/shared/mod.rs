@@ -1,3 +1,5 @@
+pub mod api_models;
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Position {
     pub x: i32,

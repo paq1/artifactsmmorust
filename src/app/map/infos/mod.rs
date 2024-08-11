@@ -1,8 +1,8 @@
 use reqwest::Client;
 
 use crate::app::api::map::GameMapApi;
-use crate::app::api::models::{Many, Single};
 use crate::core::errors::{Error, ErrorWithCode};
+use crate::core::shared::api_models::{Many, Single};
 use crate::core::shared::Position;
 
 pub async fn fetch_maps_from_position(

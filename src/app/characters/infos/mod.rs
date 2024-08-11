@@ -1,9 +1,9 @@
 use reqwest::Client;
 
 use crate::app::api::characters_api::CharacterApi;
-use crate::app::api::models::Many;
 use crate::core::characters::Character;
 use crate::core::errors::{Error, ErrorWithCode};
+use crate::core::shared::api_models::Many;
 
 pub async fn fetch_characters(
     http_client: &Client,
