@@ -11,12 +11,14 @@ use crate::app::services::can_craft_impl::CanCraftImpl;
 use crate::app::services::can_deposit_item_impl::CanDepositItemImpl;
 use crate::app::services::can_fight_impl::CanFightImpl;
 use crate::app::services::can_gathering_impl::CanGatheringImpl;
+use crate::app::services::can_get_bank::CanGetBankImpl;
 use crate::app::services::can_move_impl::CanMoveImpl;
 use crate::app::services::can_withdraw_item_impl::CanWithdrawItemImpl;
 use crate::core::behaviors::crafting::CraftingBehavior;
 use crate::core::behaviors::deposit_bank::DepositBankBehavior;
 use crate::core::behaviors::fight::FightBehavior;
 use crate::core::behaviors::gathering::GatheringBehavior;
+use crate::core::behaviors::infinit_craft::InfinitCraftBehavior;
 use crate::core::behaviors::infinit_gathering::InfinitGateringBehavior;
 use crate::core::behaviors::inifinit_fight::InfinitFight;
 use crate::core::behaviors::moving::MovingBehavior;
@@ -25,6 +27,7 @@ use crate::core::services::can_craft::CanCraft;
 use crate::core::services::can_deposit_item::CanDepositItem;
 use crate::core::services::can_fight::CanFight;
 use crate::core::services::can_gathering::CanGathering;
+use crate::core::services::can_get_bank::CanGetBank;
 use crate::core::services::can_move::CanMove;
 use crate::core::services::can_withdraw_item::CanWithdrawItem;
 use crate::core::shared::Position;
@@ -78,6 +81,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     ));
 
+    let can_get_bank: Arc<Box<dyn CanGetBank>> = Arc::new(Box::new(
+        CanGetBankImpl {
+            url: url.clone(),
+            token: token.clone(),
+            http_client: http_client.clone(),
+        }
+    ));
+
+
+
     println!("chargement des chars");
     let players_init = fetch_characters(&http_client, &token, &url).await?.data;
     println!("chargement de la gamemap");
@@ -97,6 +110,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ("forge", Position::new(1, 5)),
         ("scierie", Position::new(-2, -3)),
         ("armurerie", Position::new(3, 1)),
+        ("weapon_shop", Position::new(2, 1)),
         ("copper", Position::new(2, 0)),
         ("iron", Position::new(1, 7)),
         ("coal", Position::new(1, 6)),
@@ -157,19 +171,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //     crafting_behavior_template.clone(),
     // );
 
-    let mut cerise_behavior = InfinitGateringBehavior::new(
-        static_positions.get("coal").unwrap(),
-        gathering_behavior_template.clone(),
-        deposit_bank_behavior_template.clone(),
-        moving_behavior_template.clone(),
-    );
-
-    // let mut cerise_behavior = InfinitCraftBehavior::new(
-    //     moving_behavior_template.clone(),
+    // let mut cerise_behavior = InfinitGateringBehavior::new(
+    //     static_positions.get("coal").unwrap(),
+    //     gathering_behavior_template.clone(),
     //     deposit_bank_behavior_template.clone(),
-    //     withdraw_bank_behavior_template.clone(),
-    //     crafting_behavior_template.clone(),
+    //     moving_behavior_template.clone(),
     // );
+
+    let mut cerise_behavior = InfinitCraftBehavior::new(
+        can_get_bank.clone(),
+        moving_behavior_template.clone(),
+        deposit_bank_behavior_template.clone(),
+        _withdraw_bank_behavior_template.clone(),
+        _crafting_behavior_template.clone(),
+    );
 
     let coopermap = fetch_maps_from_position(
         &http_client.clone(),
@@ -225,10 +240,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ).await?;
                 ulquiche_behavior = next_beavior_ulquiche;
 
-                let next_beavior_cerise = cerise_behavior.next_behavior(
-                    &cerise
-                ).await?;
-                cerise_behavior = next_beavior_cerise;
+                if cerise_behavior.current_state != "finish" {
+                    let next_beavior_cerise = cerise_behavior.next_behavior(
+                        &cerise,
+                        &static_positions.get("bank").unwrap(),
+                        &static_positions.get("weapon_shop").unwrap(),
+                        &vec![("red_slimeball", 2), ("ash_plank", 3)],
+                        "fire_staff"
+                    ).await?;
+                    cerise_behavior = next_beavior_cerise;
+                }
 
                 // let next_behavior_cerise = cerise_behavior.next_behavior(
                 //     &cerise,
