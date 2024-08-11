@@ -42,7 +42,7 @@ impl InfinitCraftBehavior {
         player: &Character,
         bank_position: &Position,
         craft_position: &Position,
-        ingredient: (&str, u32),
+        ingredients: &Vec<(&str, u32)>,
         craft_result_code: &str,
     ) -> Result<InfinitCraftBehavior, Error> {
         let cooldown_sec = player.cooldown_sec();
@@ -93,48 +93,61 @@ impl InfinitCraftBehavior {
                 }
             }
             "deposit_all" => {
-                let (code, _) = ingredient;
-                let next_withdraw_item = self.withdraw_bank_behavior.next_behavior(player, code, None).await?;
-                if next_withdraw_item.current_state.as_str() == "finish" {
-                    Ok(
-                        InfinitCraftBehavior {
-                            current_state: "withdraw_all".to_string(),
-                            withdraw_bank_behavior: self.withdraw_bank_behavior.reset(),
-                            ..self.clone()
+
+                let global_quantity_for_one_recipe: u32 = ingredients
+                    .into_iter().map(|(_, quantity)| quantity)
+                    .sum();
+
+                let taille_max_inventaire = player.inventory_max_items;
+
+                let mandatory = ingredients
+                    .iter().map(|(code, quantity)| {
+                    (*code, taille_max_inventaire * quantity / global_quantity_for_one_recipe)
+                }).collect::<Vec<_>>();
+
+                let inventory_codes_only: Vec<String> = player.inventory.iter().map(|s| s.code.clone()).collect::<Vec<_>>();
+
+                let maybe_ingredient_missing = mandatory
+                    .iter()
+                    .find(|(code, _)| {
+                        !inventory_codes_only.contains(&code.to_string())
+                    })
+                    .map(|(code, quantity)| (*code, *quantity));
+
+                match maybe_ingredient_missing {
+                    Some((code, quantity)) => {
+                        let next_withdraw_item = self.withdraw_bank_behavior.next_behavior(player, code, Some(quantity)).await?;
+                        if next_withdraw_item.current_state.as_str() == "finish" {
+                            Ok(
+                                InfinitCraftBehavior {
+                                    current_state: "deposit_all".to_string(),
+                                    withdraw_bank_behavior: self.withdraw_bank_behavior.reset(),
+                                    ..self.clone()
+                                }
+                            )
                         }
-                    )
-                }
-                else {
-                    Ok(
-                        InfinitCraftBehavior {
-                            withdraw_bank_behavior: next_withdraw_item,
-                            ..self.clone()
+                        else {
+                            Ok(
+                                InfinitCraftBehavior {
+                                    withdraw_bank_behavior: next_withdraw_item,
+                                    ..self.clone()
+                                }
+                            )
                         }
-                    )
+                    }
+                    None => {
+                        Ok(
+                            InfinitCraftBehavior {
+                                current_state: "withdraw_all".to_string(),
+                                withdraw_bank_behavior: self.withdraw_bank_behavior.reset(),
+                                ..self.clone()
+                            }
+                        )
+                    }
                 }
             }
-            // "withdraw_all" => {
-            //     let next_moving_behavior = self.moving_behavior.next_behavior(player, craft_position).await?;
-            //     if next_moving_behavior.current_state.as_str() == "finish" {
-            //         Ok(
-            //             InfinitCraftBehavior {
-            //                 current_state: "in_craft_zone".to_string(),
-            //                 moving_behavior: self.moving_behavior.reset(),
-            //                 ..self.clone()
-            //             }
-            //         )
-            //     }
-            //     else {
-            //         Ok(
-            //             InfinitCraftBehavior {
-            //                 moving_behavior: next_moving_behavior,
-            //                 ..self.clone()
-            //             }
-            //         )
-            //     }
-            // }
             "withdraw_all" => {
-                let next_crafting_behavior = self.crafting_behavior.next_behavior(player, craft_position, &vec![ingredient], craft_result_code, None).await?;
+                let next_crafting_behavior = self.crafting_behavior.next_behavior(player, craft_position, ingredients, craft_result_code, None).await?;
                 if next_crafting_behavior.current_state.as_str() == "finish" {
                     Ok(
                         InfinitCraftBehavior {
