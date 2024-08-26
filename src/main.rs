@@ -137,28 +137,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _crafting_behavior_template = CraftingBehavior::new(can_craft.clone(), moving_behavior_template.clone());
 
     let mut rustboy_behavior = InfinitFight::new(
-        static_positions.get("red_slime").unwrap(),
+        static_positions.get("chicken").unwrap(),
         fight_behavior_template.clone(),
         deposit_bank_behavior_template.clone(),
         moving_behavior_template.clone(),
     );
 
-    let mut scalaman_behavior = InfinitGateringBehavior::new(
-        &static_positions.get("coal").unwrap(),
-        gathering_behavior_template.clone(),
+    let mut scalaman_behavior = InfinitFight::new(
+        static_positions.get("chicken").unwrap(),
+        fight_behavior_template.clone(),
         deposit_bank_behavior_template.clone(),
         moving_behavior_template.clone(),
     );
 
-    let mut ulquiche_behavior = InfinitGateringBehavior::new(
-        static_positions.get("spruce_tree").unwrap(),
-        gathering_behavior_template.clone(),
+    let mut ulquiche_behavior = InfinitFight::new(
+        static_positions.get("chicken").unwrap(),
+        fight_behavior_template.clone(),
         deposit_bank_behavior_template.clone(),
         moving_behavior_template.clone(),
     );
 
     let mut jeanne_behavior = InfinitFight::new(
-        static_positions.get("red_slime").unwrap(),
+        static_positions.get("chicken").unwrap(),
         fight_behavior_template.clone(),
         deposit_bank_behavior_template.clone(),
         moving_behavior_template.clone(),
@@ -171,29 +171,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //     crafting_behavior_template.clone(),
     // );
 
-    // let mut cerise_behavior = InfinitGateringBehavior::new(
-    //     static_positions.get("coal").unwrap(),
-    //     gathering_behavior_template.clone(),
-    //     deposit_bank_behavior_template.clone(),
-    //     moving_behavior_template.clone(),
-    // );
-
-    let mut cerise_behavior = InfinitCraftBehavior::new(
-        can_get_bank.clone(),
-        moving_behavior_template.clone(),
+    let mut cerise_behavior = InfinitFight::new(
+        static_positions.get("chicken").unwrap(),
+        fight_behavior_template.clone(),
         deposit_bank_behavior_template.clone(),
-        _withdraw_bank_behavior_template.clone(),
-        _crafting_behavior_template.clone(),
+        moving_behavior_template.clone(),
     );
 
-    let coopermap = fetch_maps_from_position(
-        &http_client.clone(),
-        token.as_str(),
-        url.as_str(),
-        static_positions.get("copper").unwrap(),
-    ).await;
-
-    println!("gamemap cooper {coopermap:?}");
+    // let mut cerise_behavior = InfinitCraftBehavior::new(
+    //     can_get_bank.clone(),
+    //     moving_behavior_template.clone(),
+    //     deposit_bank_behavior_template.clone(),
+    //     _withdraw_bank_behavior_template.clone(),
+    //     _crafting_behavior_template.clone(),
+    // );
 
 
     loop {
@@ -240,16 +231,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ).await?;
                 ulquiche_behavior = next_beavior_ulquiche;
 
-                if cerise_behavior.current_state != "finish" {
-                    let next_beavior_cerise = cerise_behavior.next_behavior(
-                        &cerise,
-                        &static_positions.get("bank").unwrap(),
-                        &static_positions.get("weapon_shop").unwrap(),
-                        &vec![("red_slimeball", 2), ("ash_plank", 3)],
-                        "fire_staff"
-                    ).await?;
-                    cerise_behavior = next_beavior_cerise;
-                }
+                let next_beavior_cerise = cerise_behavior.next_behavior(
+                    &cerise
+                ).await?;
+                cerise_behavior = next_beavior_cerise;
+
+                // if cerise_behavior.current_state != "finish" {
+                //     let next_beavior_cerise = cerise_behavior.next_behavior(
+                //         &cerise,
+                //         &static_positions.get("bank").unwrap(),
+                //         &static_positions.get("weapon_shop").unwrap(),
+                //         &vec![("red_slimeball", 2), ("ash_plank", 3)],
+                //         "fire_staff"
+                //     ).await?;
+                //     cerise_behavior = next_beavior_cerise;
+                // }
 
                 // let next_behavior_cerise = cerise_behavior.next_behavior(
                 //     &cerise,
